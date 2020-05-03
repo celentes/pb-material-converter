@@ -12,43 +12,46 @@ def get_material_textures(context, material):
         files.extend([os.path.join(dir,f) for f in os.listdir(dir) if os.path.isfile(os.path.join(dir,f))])
     return [x for x in files if re.search(material.name, os.path.basename(x), flags=re.IGNORECASE)]
 
-def get_texture_type(material, texname):
+def get_texture_type(context, material, texname):
     cutoff = texname.find(material.name) + len(material.name)
     if texname[cutoff] == '_':
         cutoff += 1
-    return texname[cutoff:]
+    type = texname[cutoff:]
+    if type[-3:] == "ive":
+        type = type[:-3]
+    elif type[-4:] == "ness":
+        type = type[:-4]
+    return type
     
-def get_matching_socket(material, texname):
+def get_matching_socket(context, material, texname):
     shader = material.node_tree.nodes['Principled BSDF']
     sockets = shader.inputs
-    textype = get_texture_type(material, texname)
+    textype = get_texture_type(context, material, texname)
     for x in sockets:
         if re.search(textype, x.name):
             return x
     return None
+
+class JDR_texture_binding(bpy.types.PropertyGroup):
+    exclude: bpy.props.BoolProperty(name = "", default=False)
+    path: bpy.props.StringProperty(name = "Path")
+    socket: bpy.props.StringProperty(name = "Socket")
     
 class JDR_material_props(bpy.types.PropertyGroup):
     material: bpy.props.PointerProperty(name="Material", type=bpy.types.Material)
     show: bpy.props.BoolProperty(name = "Show options", default=False)
     selected: bpy.props.BoolProperty(name = "", default=False)
-    roughness: bpy.props.BoolProperty(name="Roughness", default=False)
+    bindings: bpy.props.CollectionProperty(type=JDR_texture_binding)
             
     def draw(self, layout, context):
         box = layout.box()
         col = box.column(align=True)
-        textures = [x.image for x in self.material.node_tree.nodes if x.bl_idname == 'ShaderNodeTexImage']
-        bl = [x.filepath_from_user() for x in textures]
-        texnames = get_material_textures(context, self.material)
-        texnames = [x for x in texnames if x not in bl]
-        for x in texnames:
+        for x in self.bindings:
             row = col.row(align=True)
-            texname = os.path.splitext(os.path.basename(x))[0]
+            texname = os.path.splitext(os.path.basename(x.path))[0]
             row.label(text=texname)
-            socket = get_matching_socket(self.material,texname)
-            if socket is not None:
-                row.label(text=get_matching_socket(self.material,texname).name)
-            else:
-                row.label(text="NOTFOUND")
+            row.label(text=x.socket)
+            #row.prop(x,"exclude")
             
 def delete_dirline(self, context):
     dirlist = context.window_manager.jdr_props.directories_list
@@ -83,16 +86,31 @@ def mat_props_list_update(context, materials):
     jdr_props.directories_list.clear()
     jdr_props.scanned = False
     
+    # fill out directory suggestions
+    textures = []
     for mat in materials:
-        mprop = jdr_props.mat_props_list.add()
-        mprop.material = mat
-    
-    textures = [x.image for x in mat.node_tree.nodes if x.bl_idname == 'ShaderNodeTexImage']
+        textures.extend([x.image for x in mat.node_tree.nodes if x.bl_idname == 'ShaderNodeTexImage'])
     directory_hints = {os.path.dirname(x.filepath_from_user()) for x in textures}
     for x in directory_hints:
         dir = jdr_props.directories_list.add()
         dir.directory = x
+    
+    # fill out material props
+    for mat in materials:
+        mprop = jdr_props.mat_props_list.add()
+        mprop.material = mat
+        mat_textures = [x.image for x in mat.node_tree.nodes if x.bl_idname == 'ShaderNodeTexImage']
+        blacklist = [x.filepath_from_user() for x in mat_textures]
+        texnames = [x for x in get_material_textures(context,mat) if x not in blacklist]
+        for tn in texnames:
+            texname = os.path.splitext(os.path.basename(tn))[0]
+            socket = get_matching_socket(context,mat,texname)
+            binding = mprop.bindings.add()
+            binding.path = tn
+            binding.socket = "" if socket == None else socket.name
+    
     jdr_props.scanned = True
+    return
 
 class JDR_scan_materials(bpy.types.Operator):
     bl_idname = "jdr.scan_materials"
@@ -158,8 +176,6 @@ class MyPanel(bpy.types.Panel):
             dbc_row.prop(dirline, "directory")
             dbc_row.prop(dirline, "delete", icon="X")
         
-        #self.layout.row().operator("jdr.add_directory")
-        
         self.layout.separator()
         mats_row = self.layout.row(align=True)
         mats_row.label(text="Materials")
@@ -191,6 +207,7 @@ class MyPanel(bpy.types.Panel):
             self.layout.row().operator("jdr.upgrade_materials")
         
 
+bpy.utils.register_class(JDR_texture_binding)
 bpy.utils.register_class(JDR_material_props)
 bpy.utils.register_class(JDR_directory_line)
 bpy.utils.register_class(JDR_props)
