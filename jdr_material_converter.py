@@ -265,9 +265,8 @@ def register():
 
     bpy.types.WindowManager.jdr_props = bpy.props.PointerProperty(type=JDR_props)
 
-def unregister()
+def unregister():
     del bpy.types.WindowManager.jdr_props
 
     for c in reversed(classes):
         bpy.utils.unregister_class(c)
-
