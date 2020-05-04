@@ -1,3 +1,11 @@
+bl_info = {
+    "name":        "JDR Material Converter",
+    "description": "Upgrade materials with missing texture nodes",
+    "author":      "Tim Talashok, t.talashok@gmail.com",
+    "version":     (0, 1, 0),
+    "blender":     (2, 82, 0)
+}
+
 import bpy
 import os
 import re
@@ -238,16 +246,28 @@ class JDR_PT_main_panel(bpy.types.Panel):
         if len(selected_matprops) > 0:
             self.layout.row().operator("jdr.upgrade_materials")
 
+classes = (
+    JDR_texture_binding,
+    JDR_material_props,
+    JDR_directory_line,
+    JDR_props,
+    JDR_add_directory,
+    JDR_scan_materials,
+    JDR_select_all_materials,
+    JDR_deselect_all_materials,
+    JDR_upgrade_materials,
+    JDR_PT_main_panel
+)
 
-bpy.utils.register_class(JDR_texture_binding)
-bpy.utils.register_class(JDR_material_props)
-bpy.utils.register_class(JDR_directory_line)
-bpy.utils.register_class(JDR_props)
-bpy.utils.register_class(JDR_add_directory)
-bpy.utils.register_class(JDR_scan_materials)
-bpy.utils.register_class(JDR_select_all_materials)
-bpy.utils.register_class(JDR_deselect_all_materials)
-bpy.utils.register_class(JDR_upgrade_materials)
-bpy.utils.register_class(JDR_PT_main_panel)
+def register():
+    for c in classes:
+        bpy.utils.register_class(c)
 
-bpy.types.WindowManager.jdr_props = bpy.props.PointerProperty(type=JDR_props)
+    bpy.types.WindowManager.jdr_props = bpy.props.PointerProperty(type=JDR_props)
+
+def unregister()
+    del bpy.types.WindowManager.jdr_props
+
+    for c in reversed(classes):
+        bpy.utils.unregister_class(c)
+
