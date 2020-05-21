@@ -4,41 +4,61 @@ import os
 import re
 
 TEXTURE_TYPE_DICT = {
-    "emissive" : "Emission",
-    "emission" : "Emission",
-    
+    # DIFFUSE
     "diffuse" : "Diffuse",
     "color" : "Diffuse",
     "basecolor" : "Diffuse",
     "albedo" : "Diffuse",
-    
+    # SPECULAR
     "spec" : "Specular",
-    
-    "normal" : "Normal",
-    
-    "rough" : "Roughness",
-    "roughness" : "Roughness",
-    "gloss" : "Roughness", # add quirks too
-    
+    "specular" : "Specular",
+    # METALNESS
     "metal" : "Metalness",
     "metallic" : "Metalness",
     "metalness" : "Metalness",
-    
-    "ao" : "AmbientOcclusion",
-    
-    "height" : "Height",
-    
+    # ROUGHNESS
+    "rough" : "Roughness",
+    "roughness" : "Roughness",
+    "gloss" : "Roughness", # add quirks too
+    # BUMP
     "bump" : "Bump",
+    # NORMAL
+    "normal" : "Normal",
+    # DISPLACEMENT
+    "height" : "Displacement",
+    "displacement" : "Displacement",
+    # OPACITY
+    "opacity" : "Opacity",
+    "alpha" : "Opacity",
+    "transparency" : "Opacity",
+    # EMISSION
+    "emission" : "Emission",
+    "emissive" : "Emission",
+    "luminosity" : "Emission",
+    # AMBIENT OCCLUSION
+    "ao" : "AmbientOcclusion",
+    "ambientocclusion" : "AmbientOcclusion",
 }
 
+class binding:
+    def __init__(self, name, id):
+        self._name = name
+        self._id = id
+    def id(self):
+        return self._id
+    def name(self):
+        return self._name
+
 OCTANE_BINDINGS = {
-#    "Emission" : "Emission",
-    "Roughness" : "Roughness",
-    "Diffuse" : "Diffuse",
-    "Specular" : "Specular",
-    "Normal" : "Normal",
-    "Bump" : "Bump",
-#    "Metalness" : "Metallic",
+    "Diffuse" : binding("Albedo", c4d.OCT_MATERIAL_DIFFUSE_LINK),
+    "Specular" : binding("Specular", c4d.OCT_MATERIAL_SPECULAR_LINK),
+    "Metalness" : binding("Metallic", c4d.OCT_MAT_SPECULAR_MAP_LINK),
+    "Roughness" : binding("Roughness", c4d.OCT_MATERIAL_ROUGHNESS_LINK),
+    "Bump" : binding("Bump", c4d.OCT_MATERIAL_BUMP_LINK),
+    "Normal" : binding("Normal", c4d.OCT_MATERIAL_NORMAL_LINK),
+    "Displacement" : binding("Displacement", c4d.OCT_MATERIAL_DISPLACEMENT_LINK),
+    "Opacity" : binding("Opacity", c4d.OCT_MATERIAL_OPACITY_LINK),
+    "Emission" : binding("Emission", c4d.OCT_MATERIAL_EMISSION),
 }
 
 OCTANE_BINDING_IDS = {
@@ -90,7 +110,7 @@ def create_octane_material():
 def upgrade_material_octane(mat, directories):
     name = mat.GetName()
     texfiles = get_texture_filenames(directories, name)
-    
+
     oct_mat = create_octane_material()
     oct_mat.SetName(name+"_octane")
     for tf in texfiles:
@@ -107,7 +127,7 @@ def upgrade_material_octane(mat, directories):
     doc.InsertMaterial(oct_mat)
     doc.SetActiveMaterial(oct_mat,c4d.SELECTION_NEW)
     doc.GetActiveMaterial()
-    
+
 def get_all_materials_c4d():
     doc = c4d.documents.GetActiveDocument()
     mats = doc.GetMaterials()
@@ -157,7 +177,7 @@ class JDR_dialog(c4d.gui.GeDialog):
 
     def fill_directories(self, dirs):
         self.directories = dirs
-        
+
     def selected_material_ids(self):
         return [i for i in range(len(self.materials)) if self.GetBool(CHKBOXES_MATERIAL_SELECT+i)]
 
@@ -174,7 +194,7 @@ class JDR_dialog(c4d.gui.GeDialog):
             self.AddStaticText(90000+i,c4d.BFH_SCALEFIT, name=self.materials[i].GetName())
             self.AddCheckbox(CHKBOXES_MATERIAL_SELECT+i, c4d.BFH_RIGHT, initw=5, inith=5, name="")
         self.LayoutChanged(id=GRP_MATERIAL_SELECT)
-    
+
     def redraw_material_binding(self, mat_id):
         self.LayoutFlushGroup(id=GRPS_BINDING+mat_id)
         texture_files = get_texture_filenames(self.directories, self.materials[mat_id].GetName())
@@ -183,7 +203,7 @@ class JDR_dialog(c4d.gui.GeDialog):
             if mat_id in self.selected_material_ids():
                 self.AddStaticText(91000+mat_id, c4d.BFH_SCALEFIT, name=txt)
         self.LayoutChanged(id=GRPS_BINDING+mat_id)
-        
+
     def redraw_bindings(self):
         for i in range(len(self.materials)):
             self.redraw_material_binding(i)
@@ -240,7 +260,7 @@ class JDR_dialog(c4d.gui.GeDialog):
             self.GroupBegin(id=GRPS_BINDING+i,flags=c4d.BFH_SCALEFIT,cols=1)
             self.GroupEnd()
         self.GroupEnd()
-        
+
         self.AddButton(id=BTN_UPGRADE,flags=c4d.BFH_SCALEFIT,name="Upgrade")
 
         self.LayoutChanged(id=GRP_CONTROL)
@@ -253,29 +273,29 @@ class JDR_dialog(c4d.gui.GeDialog):
             self.redraw_materials()
             self.redraw_texture_dirs()
             self.redraw_bindings()
-        
+
         if id == BTN_SELECT_ALL_MATS:
             for i in range(len(self.materials)):
                 self.SetBool(CHKBOXES_MATERIAL_SELECT+i, True)
             self.redraw_bindings()
-        
+
         if id == BTN_DESELECT_ALL_MATS:
             for i in range(len(self.materials)):
                 self.SetBool(CHKBOXES_MATERIAL_SELECT+i, False)
             self.redraw_bindings()
-                
+
         if id >= BTNS_DELETE_DIR and id < BTNS_DELETE_DIR+len(self.directories):
             self.directories.pop(id-BTNS_DELETE_DIR)
             self.redraw_texture_dirs()
-            
+
         if id == BTN_ADD_DIR:
             dir = self.GetString(EDITBOX_ADD_DIR)
             self.directories.append(dir)
             self.redraw_texture_dirs()
-            
+
         if id >= CHKBOXES_MATERIAL_SELECT and id < CHKBOXES_MATERIAL_SELECT+len(self.materials):
             self.redraw_bindings()
-            
+
         if id == BTN_UPGRADE:
             ids = self.selected_material_ids()
             mats = [self.materials[i] for i in ids]
