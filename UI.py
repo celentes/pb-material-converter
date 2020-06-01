@@ -24,10 +24,9 @@ def get_directory_hints_c4d():
 
 BTN_SCAN_MATERIALS=1000
 GRP_CONTROL=1001
-GRP_TEXTURE_DIRS=2000
-GRP_ADD_DIR=2001
-EDITBOX_ADD_DIR=2002
-BTN_ADD_DIR=2003
+GRP_CHANGE_DIR=2000
+EDITBOX_TEXTURE_DIR=2002
+BTN_CHANGE_DIR=2003
 STRPROPS_DIR=2100
 BTNS_DELETE_DIR=2200
 GRP_MATERIAL_SELECT=3000
@@ -46,7 +45,7 @@ CB_RENDERER=12000
 
 class JDR_dialog(c4d.gui.GeDialog):
     materials = []
-    directories = []
+    directory = "" 
     renderers = dict()
     rnd = None
 
@@ -67,18 +66,11 @@ class JDR_dialog(c4d.gui.GeDialog):
     def fill_materials(self, mats):
         self.materials = mats
 
-    def fill_directories(self, dirs):
-        self.directories = dirs
+    def fill_directory(self, dir):
+        self.directory = dir
 
     def selected_material_ids(self):
         return [i for i in range(len(self.materials)) if self.GetBool(CHKBOXES_MATERIAL_SELECT+i)]
-
-    def redraw_texture_dirs(self):
-        self.LayoutFlushGroup(id=GRP_TEXTURE_DIRS)
-        for i in range(len(self.directories)):
-            self.AddStaticText(id=STRPROPS_DIR+i,flags=c4d.BFH_SCALEFIT, name=self.directories[i])
-            self.AddButton(id=BTNS_DELETE_DIR+i,flags=c4d.BFH_RIGHT, name="X")
-        self.LayoutChanged(id=GRP_TEXTURE_DIRS)
 
     def redraw_materials(self):
         self.LayoutFlushGroup(id=GRP_MATERIAL_SELECT)
@@ -90,7 +82,7 @@ class JDR_dialog(c4d.gui.GeDialog):
     def draw_material_bindings(self):
         for mat_id in range(len(self.materials)):
             self.LayoutFlushGroup(id=GRPS_BINDING+mat_id)
-            texture_files = get_texture_filenames(self.directories, self.materials[mat_id].GetName())
+            texture_files = get_texture_filenames([self.directory], self.materials[mat_id].GetName())
             for i in range(len(texture_files)):
                 txt, ext = os.path.splitext(os.path.basename(texture_files[i]))
                 if mat_id in self.selected_material_ids():
@@ -179,13 +171,11 @@ class JDR_dialog(c4d.gui.GeDialog):
 
         self.GroupBegin(id=SG_TEXTURE_DIR_GRP,flags=c4d.BFH_SCALEFIT,cols=1)
 
-        self.GroupBegin(id=GRP_ADD_DIR,flags=c4d.BFH_SCALEFIT,cols=2)
-        self.AddEditText(id=EDITBOX_ADD_DIR,flags=c4d.BFH_SCALEFIT)
-        self.AddButton(id=BTN_ADD_DIR,flags=c4d.BFH_RIGHT,name="Add directory")
-        self.GroupEnd()
-
-        self.GroupBegin(id=GRP_TEXTURE_DIRS,flags=c4d.BFH_SCALEFIT,title="Textures",cols=2)
-        self.GroupSpace(0,0)
+        self.GroupBegin(id=GRP_CHANGE_DIR,flags=c4d.BFH_SCALEFIT,cols=2)
+        self.AddEditText(id=EDITBOX_TEXTURE_DIR,flags=c4d.BFH_SCALEFIT)
+        self.Enable(EDITBOX_TEXTURE_DIR,False)
+        self.SetString(EDITBOX_TEXTURE_DIR,self.directory)
+        self.AddButton(id=BTN_CHANGE_DIR,flags=c4d.BFH_RIGHT,name="...")
         self.GroupEnd()
 
         self.GroupEnd()
@@ -212,10 +202,9 @@ class JDR_dialog(c4d.gui.GeDialog):
         if id == BTN_SCAN_MATERIALS:
             self.query_renderers()
             self.fill_materials(get_all_materials_c4d())
-            self.fill_directories(get_directory_hints_c4d())
+            self.fill_directory(get_directory_hints_c4d()[0])
             self.fill_control_group_layout()
             self.redraw_materials()
-            self.redraw_texture_dirs()
             self.redraw_bindings()
 
         if id == BTN_SELECT_ALL_MATS:
@@ -228,14 +217,11 @@ class JDR_dialog(c4d.gui.GeDialog):
                 self.SetBool(CHKBOXES_MATERIAL_SELECT+i, False)
             self.redraw_bindings()
 
-        if id >= BTNS_DELETE_DIR and id < BTNS_DELETE_DIR+len(self.directories):
-            self.directories.pop(id-BTNS_DELETE_DIR)
-            self.redraw_texture_dirs()
-
-        if id == BTN_ADD_DIR:
-            dir = self.GetString(EDITBOX_ADD_DIR)
-            self.directories.append(dir)
-            self.redraw_texture_dirs()
+        if id == BTN_CHANGE_DIR:
+            folder = c4d.storage.LoadDialog(flags=c4d.FILESELECT_DIRECTORY)
+            self.SetString(EDITBOX_TEXTURE_DIR, folder)
+            self.directory = folder
+            self.redraw_bindings()
 
         if id >= CHKBOXES_MATERIAL_SELECT and id < CHKBOXES_MATERIAL_SELECT+len(self.materials):
             self.redraw_bindings()
@@ -244,7 +230,7 @@ class JDR_dialog(c4d.gui.GeDialog):
             ids = self.selected_material_ids()
             mats = [self.materials[i] for i in ids]
             for m in mats:
-                self.rnd.upgrade_material(m, self.directories)
+                self.rnd.upgrade_material(m, [self.directory])
 
         if id == SG_TEXTURE_DIR:
             self.texture_dir_hide = not self.texture_dir_hide
