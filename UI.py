@@ -43,7 +43,7 @@ SG_BINDINGS=11000
 SG_BINDINGS_GRP=11001
 CB_RENDERER=12000
 
-class JDR_dialog(c4d.gui.GeDialog):
+class PBMC_Dialog(c4d.gui.GeDialog):
     materials = []
     directory = "" 
     renderers = dict()
@@ -87,9 +87,7 @@ class JDR_dialog(c4d.gui.GeDialog):
                 txt, ext = os.path.splitext(os.path.basename(texture_files[i]))
                 if mat_id in self.selected_material_ids():
                     textype = get_texture_type(self.materials[mat_id].GetName(),txt)
-                    binding = self.rnd.get_binding(textype)
-                    bname = "NOT MAPPABLE" if binding is None else binding.name()
-                    bname = "   " + bname
+                    bname = "   " + self.rnd.get_binding_name(textype)
                     _txt =  "   " + txt
                     self.AddStaticText(91000+2*mat_id, c4d.BFH_SCALEFIT, name=_txt)
                     b_text = self.AddStaticText(91000+2*mat_id+1, c4d.BFH_SCALEFIT, name=bname, borderstyle=c4d.BORDER_WITH_TITLE_BOLD)

@@ -12,12 +12,15 @@ reload(octane)
 import UI
 reload(UI)
 
+import arnold
+reload(arnold)
+
 # TODO: bloody specs
 
 # Main function
 def main():
-    jdr = UI.JDR_dialog()
-    jdr.Open(c4d.DLG_TYPE_MODAL_RESIZEABLE, defaultw=300, defaulth=500, xpos=-2, ypos=-2)
+    pbmc = UI.PBMC_Dialog()
+    pbmc.Open(c4d.DLG_TYPE_MODAL_RESIZEABLE, defaultw=300, defaulth=500, xpos=-2, ypos=-2)
 
 # Execute main()
 if __name__=='__main__':

@@ -27,6 +27,13 @@ def get_binding(tex_type):
         return OCTANE_BINDINGS[tex_type]
     else:
         return None
+
+def get_binding_name(tex_type):
+    binding = get_binding(tex_type)
+    if binding is not None:
+        return binding.name()
+    else:
+        return tm.NOTMAPPED_STR
         
 def create_texture(filename):
     ID_OCTANE_IMAGETEXTURE = 1029508
@@ -34,11 +41,12 @@ def create_texture(filename):
     shd[c4d.IMAGETEXTURE_FILE] = filename
     return shd
 
-def create_material():
+def create_material(name):
     ID_OCTANE_MATERIAL=1029501
     mat = c4d.BaseMaterial(ID_OCTANE_MATERIAL)
     mat[c4d.OCT_MATERIAL_TYPE] = c4d.OCT_MAT_UNIVERSAL
     mat[c4d.OCT_MAT_BRDF_MODEL] = c4d.OCT_MAT_BRDF_GGX
+    mat.SetName(name+"_octane") 
     return mat
 
 def bind_texture(mat, tex_path, binding):
@@ -84,8 +92,7 @@ def upgrade_material(mat, directories):
     name = mat.GetName()
     texfiles = tm.get_texture_filenames(directories, name)
 
-    oct_mat = create_material() 
-    oct_mat.SetName(name+"_octane") 
+    oct_mat = create_material(name+"_octane") 
     for tex_path in texfiles: 
         tex_type = tm.get_texture_type(name,tex_path)
         binding = get_binding(tex_type)

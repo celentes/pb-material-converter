@@ -38,6 +38,8 @@ TEXTURE_TYPE_DICT = {
     "ambientocclusion" : "AmbientOcclusion",
 }
 
+NOTMAPPED_STR = "NOT MAPPABLE"
+
 def get_directory_hints(texture_paths_list):
     if texture_paths_list == None:
         return []
