@@ -1,10 +1,8 @@
-import c4d
-from c4d import gui
-import os
-import re
+import c4d, os, re, sys
 
-import TextureMapping
-import UI
+sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+
+import TextureMapping, UI
 
 PLUGIN_ID = 1055192 # PhotobashMaterialConverter
 
