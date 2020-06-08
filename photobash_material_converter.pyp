@@ -4,7 +4,6 @@ import os
 import re
 
 import TextureMapping
-import octane
 import UI
 
 PLUGIN_ID = 1055192 # PhotobashMaterialConverter
