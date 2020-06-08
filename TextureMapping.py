@@ -1,6 +1,18 @@
 import os
 import re
 
+SUPPORTED_EXTENSIONS = [
+    ".jpg", 
+    ".jpeg", 
+    ".psd", 
+    ".tiff", 
+    ".tga", 
+    ".bmp", 
+    ".png", 
+    ".b3d", 
+    ".iff",
+]
+
 TEXTURE_TYPE_DICT = {
     # DIFFUSE
     "diffuse" : "Diffuse",
@@ -50,6 +62,8 @@ def get_texture_filenames(directories, material_name=None):
     files = []
     for dir in directories:
         files.extend([os.path.join(dir,f) for f in os.listdir(dir) if os.path.isfile(os.path.join(dir,f))])
+    # filter out accepted formats
+    files = [x for x in files if os.path.splitext(x)[1].lower() in SUPPORTED_EXTENSIONS]
     if material_name is None:
         return files
     else:

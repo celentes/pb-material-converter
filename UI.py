@@ -30,8 +30,7 @@ BTN_CHANGE_DIR=2003
 STRPROPS_DIR=2100
 BTNS_DELETE_DIR=2200
 GRP_MATERIAL_SELECT=3000
-GRP_MATERIAL_SELECT_CONTROL=3001
-BTN_SELECT_ALL_MATS=3002
+CHKBOX_SELECT_ALL_MATS=3002
 BTN_DESELECT_ALL_MATS=3003
 CHKBOXES_MATERIAL_SELECT=3200
 GRP_MATERIAL_BINDINGS=5000
@@ -61,7 +60,12 @@ class PBMC_Dialog(c4d.gui.GeDialog):
             import octane
             self.renderers["Octane"] = octane
             self.rnd = octane
-        # self.rnd = 
+        if c4d.plugins.FindPlugin(1033991) is not None:
+            print "PBMC: Found arnold plugin"
+            import arnold
+            self.renderers["Arnold"] = arnold
+            self.rnd = arnold
+        # self.rnd = default
 
     def fill_materials(self, mats):
         self.materials = mats
@@ -77,6 +81,7 @@ class PBMC_Dialog(c4d.gui.GeDialog):
         for i in range(len(self.materials)):
             self.AddStaticText(90000+i,c4d.BFH_SCALEFIT, name=self.materials[i].GetName())
             self.AddCheckbox(CHKBOXES_MATERIAL_SELECT+i, c4d.BFH_RIGHT, initw=5, inith=5, name="")
+            self.SetBool(CHKBOXES_MATERIAL_SELECT+i, True)
         self.LayoutChanged(id=GRP_MATERIAL_SELECT)
 
     def draw_material_bindings(self):
@@ -119,15 +124,15 @@ class PBMC_Dialog(c4d.gui.GeDialog):
 
         # materials selection 
 
-        self.GroupBegin(id=99002, flags=c4d.BFH_SCALEFIT, cols=2)
+        self.GroupBegin(id=99002, flags=c4d.BFH_SCALEFIT, cols=4)
         self.AddStaticText(id=99003,flags=c4d.BFH_LEFT,name="   "+str(len(self.materials)),borderstyle=c4d.BORDER_WITH_TITLE_BOLD)
         self.AddStaticText(id=99004,flags=c4d.BFH_SCALEFIT,name="Materials found")
+        self.AddStaticText(id=99005,flags=c4d.BFH_RIGHT,name="Select all")
+        self.AddCheckbox(id=CHKBOX_SELECT_ALL_MATS,flags=c4d.BFH_RIGHT,initw=5,inith=5,name="")
+        self.SetBool(CHKBOX_SELECT_ALL_MATS, True)
         self.GroupEnd()
 
-        self.GroupBegin(id=GRP_MATERIAL_SELECT_CONTROL,flags=c4d.BFH_SCALEFIT,cols=2)
-        self.AddButton(id=BTN_SELECT_ALL_MATS,flags=c4d.BFH_SCALEFIT,name="Select all")
-        self.AddButton(id=BTN_DESELECT_ALL_MATS,flags=c4d.BFH_SCALEFIT,name="Deselect all")
-        self.GroupEnd()
+        self.AddSeparatorH(1)
 
         self.GroupBegin(id=GRP_MATERIAL_SELECT,flags=c4d.BFH_SCALEFIT,cols=2)
         self.GroupSpace(0,1)
@@ -205,14 +210,10 @@ class PBMC_Dialog(c4d.gui.GeDialog):
             self.redraw_materials()
             self.redraw_bindings()
 
-        if id == BTN_SELECT_ALL_MATS:
+        if id == CHKBOX_SELECT_ALL_MATS:
+            status = self.GetBool(id)
             for i in range(len(self.materials)):
-                self.SetBool(CHKBOXES_MATERIAL_SELECT+i, True)
-            self.redraw_bindings()
-
-        if id == BTN_DESELECT_ALL_MATS:
-            for i in range(len(self.materials)):
-                self.SetBool(CHKBOXES_MATERIAL_SELECT+i, False)
+                self.SetBool(CHKBOXES_MATERIAL_SELECT+i, status)
             self.redraw_bindings()
 
         if id == BTN_CHANGE_DIR:
@@ -222,6 +223,8 @@ class PBMC_Dialog(c4d.gui.GeDialog):
             self.redraw_bindings()
 
         if id >= CHKBOXES_MATERIAL_SELECT and id < CHKBOXES_MATERIAL_SELECT+len(self.materials):
+            all_selected = all([self.GetBool(CHKBOXES_MATERIAL_SELECT+i) for i in range(len(self.materials))])
+            self.SetBool(CHKBOX_SELECT_ALL_MATS, all_selected)
             self.redraw_bindings()
 
         if id == BTN_UPGRADE:
@@ -229,6 +232,7 @@ class PBMC_Dialog(c4d.gui.GeDialog):
             mats = [self.materials[i] for i in ids]
             for m in mats:
                 self.rnd.upgrade_material(m, [self.directory])
+            c4d.EventAdd(c4d.EVENT_FORCEREDRAW)
 
         if id == SG_TEXTURE_DIR:
             self.texture_dir_hide = not self.texture_dir_hide
