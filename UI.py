@@ -22,6 +22,14 @@ def get_directory_hints_c4d():
     [tf_list.extend(get_material_texture_paths_c4d(m)) for m in mats]
     return get_directory_hints(tf_list)
 
+def replace_material(doc, oldmat, newmat):
+    ID_MATERIAL_TAG = 5616
+    objects = [x for x in doc.GetObjects() if x.GetTag(ID_MATERIAL_TAG)[c4d.TEXTURETAG_MATERIAL] == oldmat]
+    for x in objects:
+        x.GetTag(ID_MATERIAL_TAG)[c4d.TEXTURETAG_MATERIAL] = newmat
+    oldmat.Remove()
+
+SCROLLGRP_MAIN=500
 BTN_SCAN_MATERIALS=1000
 GRP_CONTROL=1001
 GRP_CHANGE_DIR=2000
@@ -116,8 +124,10 @@ class PBMC_Dialog(c4d.gui.GeDialog):
         self.SetTitle("Photobash Material Converter")
         self.AddButton(BTN_SCAN_MATERIALS, c4d.BFH_SCALEFIT, name="Scan materials")
 
+        #self.ScrollGroupBegin(id=SCROLLGRP_MAIN, flags=c4d.BFH_SCALEFIT, inith=120, scrollflags=c4d.SCROLLGROUP_VERT)
         self.GroupBegin(id=GRP_CONTROL,flags=c4d.BFH_SCALEFIT,cols=1)
         self.GroupEnd()
+        #self.GroupEnd()
 
         return True
 
@@ -234,9 +244,12 @@ class PBMC_Dialog(c4d.gui.GeDialog):
         if id == BTN_UPGRADE:
             ids = self.selected_material_ids()
             mats = [self.materials[i] for i in ids]
+            doc = c4d.documents.GetActiveDocument()
             for m in mats:
-                self.rnd.upgrade_material(m, [self.directory])
+                newmat = self.rnd.upgrade_material(m, [self.directory])
+                replace_material(doc, m, newmat)
             c4d.EventAdd(c4d.EVENT_FORCEREDRAW)
+            self.AskClose()
 
         if id == SG_TEXTURE_DIR:
             self.texture_dir_hide = not self.texture_dir_hide

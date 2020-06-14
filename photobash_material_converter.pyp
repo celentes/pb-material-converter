@@ -13,14 +13,7 @@ class PBMC_CommandData(c4d.plugins.CommandData):
         if self.dialog is None:
             self.dialog = UI.PBMC_Dialog()
         
-        return self.dialog.Open(c4d.DLG_TYPE_ASYNC, pluginid=PLUGIN_ID, defaultw=300, defaulth=500, xpos=-2, ypos=-2)
-
-    def RestoreLayout(self, sec_ref):
-        if self.dialog is None:
-            self.dialog = UI.PBMC_Dialog()
-
-        return self.dialog.Restore(pluginid=PLUGIN_ID, secret=sec_ref)
-
+        return self.dialog.Open(c4d.DLG_TYPE_MODAL_RESIZEABLE, pluginid=PLUGIN_ID, defaultw=300, defaulth=500, xpos=-2, ypos=-2)
 
 # Execute main()
 if __name__=='__main__':
