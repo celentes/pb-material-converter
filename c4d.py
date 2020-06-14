@@ -15,6 +15,9 @@ reload(UI)
 import arnold
 reload(arnold)
 
+import vray
+reload(vray)
+
 # TODO: bloody specs
 
 # Main function

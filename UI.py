@@ -54,6 +54,11 @@ class PBMC_Dialog(c4d.gui.GeDialog):
     bindings_hide = True
 
     def query_renderers(self):
+        if c4d.plugins.FindPlugin(1038954) is not None:
+            print "PBMC: Found vray plugin"
+            import vray
+            self.renderers["VRay"] = vray
+            self.rnd = vray
         if c4d.plugins.FindPlugin(1041569) is not None:
             print "PBMC: Found octane plugin"
             import octane
@@ -248,6 +253,7 @@ class PBMC_Dialog(c4d.gui.GeDialog):
             _name = self.renderers.keys()[_id]
             _rnd = self.renderers[_name]
             self.rnd = _rnd
+            self.redraw_bindings()
             print "PBMC: Setting renderer to " + _name
 
         return True
