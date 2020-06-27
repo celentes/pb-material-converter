@@ -32,9 +32,9 @@ C4DAIP_NORMAL_MAP_NORMAL = 423473794
 
 # from res/description/ainode_standard_surface.h
 C4DAI_STANDARD_SURFACE_MATERIAL_TYPE = 1630484996
-C4DAIP_STANDARD_SURFACE_BASE_COLOR = 1044225467 
+C4DAIP_STANDARD_SURFACE_BASE_COLOR = 1044225467
 C4DAIP_STANDARD_SURFACE_DIFFUSE_ROUGHNESS = 2099493681
-C4DAIP_STANDARD_SURFACE_NORMAL = 244376085 
+C4DAIP_STANDARD_SURFACE_NORMAL = 244376085
 C4DAIP_STANDARD_SURFACE_SPECULAR_COLOR = 801517079
 C4DAIP_STANDARD_SURFACE_SPECULAR_ROUGHNESS = 1876347704
 C4DAIP_STANDARD_SURFACE_METALNESS  = 1875191464
@@ -183,8 +183,8 @@ def upgrade_material(mat, directories):
     name = mat.GetName()
     texfiles = tm.get_texture_filenames(directories, name)
 
-    arn_mat, ss = create_material(name+"_arnold") 
-    for tex_path in texfiles: 
+    arn_mat, ss = create_material(name+"_arnold")
+    for tex_path in texfiles:
         tex_type = tm.get_texture_type(name, tex_path)
         binding = get_binding_name(tex_type)
         if binding == tm.NOTMAPPED_STR:

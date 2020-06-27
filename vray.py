@@ -24,6 +24,7 @@ VRAY_BINDINS = {
     "Bump" : binding("Bump", c4d.VRAYSTDMATERIAL_BUMP_BUMPMAP),
     "Opacity" : binding("Opacity", c4d.VRAYSTDMATERIAL_OPACITY_TEX),
     "Emission" : binding("Self-Illumination", c4d.VRAYSTDMATERIAL_SELFILLUMCOLOR_TEX),
+    "Normal" : binding("Normal", c4d.VRAYSTDMATERIAL_BUMP_NORMALMAP),
 }
 
 def get_binding(tex_type):
@@ -38,7 +39,7 @@ def get_binding_name(tex_type):
         return binding.name()
     else:
         return tm.NOTMAPPED_STR
-        
+
 def create_texture(filename):
     shd = c4d.BaseShader(c4d.Xbitmap)
     shd[c4d.BITMAPSHADER_FILENAME] = filename
@@ -47,11 +48,10 @@ def create_texture(filename):
 def create_material(name):
     ID_VRAY_STANDARD_MATERIAL = 1038954
     mat = c4d.BaseMaterial(ID_VRAY_STANDARD_MATERIAL)
-    mat.SetName(name+"_vray") 
+    mat.SetName(name+"_vray")
     return mat
 
 def bind_texture(mat, tex_path, binding):
-    print "setting " + binding.name()
     shd = create_texture(tex_path)
     shd.SetName(binding.name())
 
@@ -60,17 +60,20 @@ def bind_texture(mat, tex_path, binding):
         shd[c4d.BITMAPSHADER_BLACKPOINT] = 1
         shd[c4d.BITMAPSHADER_WHITEPOINT] = 0
         #mat[c4d.VRAYSTDMATERIAL_BRDFUSEROUGHNESS] = 1
+    if binding.name() == "Normal":
+        mat[c4d.VRAYSTDMATERIAL_BUMP_TYPE] = 1
+        pass
 
     mat.InsertShader(shd)
     mat[binding.id()] = shd
     return
-    
+
 def upgrade_material(mat, directories):
     name = mat.GetName()
     texfiles = tm.get_texture_filenames(directories, name)
 
-    vray_mat = create_material(name+"_vray") 
-    for tex_path in texfiles: 
+    vray_mat = create_material(name+"_vray")
+    for tex_path in texfiles:
         tex_type = tm.get_texture_type(name,tex_path)
         binding = get_binding(tex_type)
         if binding is None:
