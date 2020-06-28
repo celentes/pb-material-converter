@@ -1,6 +1,6 @@
 import c4d
 import os
-from TextureMapping import get_texture_filenames, get_texture_type, get_directory_hints
+from texture_mapping import get_texture_filenames, get_texture_type, get_directory_hints
 
 def get_all_materials_c4d():
     doc = c4d.documents.GetActiveDocument()
@@ -51,7 +51,7 @@ CB_RENDERER=12000
 
 class PBMC_Dialog(c4d.gui.GeDialog):
     materials = []
-    directory = "" 
+    directory = ""
     renderers = dict()
     rnd = None
 
@@ -136,7 +136,7 @@ class PBMC_Dialog(c4d.gui.GeDialog):
 
         self.AddSeparatorH(1)
 
-        # materials selection 
+        # materials selection
 
         self.GroupBegin(id=99002, flags=c4d.BFH_SCALEFIT, cols=4)
         self.AddStaticText(id=99003,flags=c4d.BFH_LEFT,name="   "+str(len(self.materials)),borderstyle=c4d.BORDER_WITH_TITLE_BOLD)
@@ -198,7 +198,7 @@ class PBMC_Dialog(c4d.gui.GeDialog):
         self.GroupEnd()
         self.HideElement(SG_TEXTURE_DIR_GRP, self.texture_dir_hide)
 
-        # choose renderer 
+        # choose renderer
 
         self.GroupBegin(id=CB_RENDERER+1, flags=c4d.BFH_SCALEFIT, cols=2)
         self.AddStaticText(id=CB_RENDERER+2, flags=c4d.BFH_LEFT, name="Renderer")
@@ -209,7 +209,7 @@ class PBMC_Dialog(c4d.gui.GeDialog):
         self.AddChildren(CB_RENDERER, rnd_bc)
         self.GroupEnd()
 
-        # upgrade materials 
+        # upgrade materials
 
         self.AddButton(id=BTN_UPGRADE,flags=c4d.BFH_SCALEFIT,name="Convert Selected Materials")
 
@@ -260,7 +260,7 @@ class PBMC_Dialog(c4d.gui.GeDialog):
             self.bindings_hide = not self.bindings_hide
             self.HideElement(SG_BINDINGS_GRP, self.bindings_hide)
             self.LayoutChanged(GRP_CONTROL)
-        
+
         if id == CB_RENDERER:
             _id = self.GetInt32(CB_RENDERER)
             _name = self.renderers.keys()[_id]

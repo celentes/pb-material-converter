@@ -1,5 +1,5 @@
 import c4d
-import TextureMapping as tm
+import texture_mapping as tm
 
 class binding:
     def __init__(self, name, id):

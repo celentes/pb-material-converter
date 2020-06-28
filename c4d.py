@@ -3,8 +3,8 @@ from c4d import gui
 import os
 import re
 
-import TextureMapping
-reload(TextureMapping)
+import texture_mapping
+reload(texture_mapping)
 
 import octane
 reload(octane)

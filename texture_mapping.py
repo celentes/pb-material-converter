@@ -2,14 +2,14 @@ import os
 import re
 
 SUPPORTED_EXTENSIONS = [
-    ".jpg", 
-    ".jpeg", 
-    ".psd", 
-    ".tiff", 
-    ".tga", 
-    ".bmp", 
-    ".png", 
-    ".b3d", 
+    ".jpg",
+    ".jpeg",
+    ".psd",
+    ".tiff",
+    ".tga",
+    ".bmp",
+    ".png",
+    ".b3d",
     ".iff",
 ]
 
@@ -68,7 +68,7 @@ def get_texture_filenames(directories, material_name=None):
         return files
     else:
         return [x for x in files if re.search(material_name, os.path.basename(x), flags=re.IGNORECASE)]
-    
+
 def get_texture_type(material_name, texture_path):
     texname, ext = os.path.splitext(os.path.basename(texture_path))
     i_cutoff = texname.find(material_name) + len(material_name)
