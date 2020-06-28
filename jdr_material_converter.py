@@ -6,13 +6,20 @@ bl_info = {
     "blender":     (2, 82, 0)
 }
 
-import bpy
-import os
-import re
+import bpy, os, re
 
 def texture_directories(context):
     jdr_props = context.window_manager.jdr_props
     return [x.directory for x in jdr_props.directories_list]
+
+def get_surface_shader(material):
+    return material.node_tree.nodes['Material Output'].inputs['Surface'].links[0].from_node
+
+def is_standard_surface(surfaceShader):
+    return surfaceShader.bl_idname == 'ShaderNodeBsdfPrincipled'
+
+def is_octane_surface(surfaceShader):
+    return surfaceShader.bl_idname == 'ShaderNodeOctUniversalMat'
 
 def get_material_textures(context, material):
     files = []
@@ -32,7 +39,7 @@ def get_texture_type(context, material, texname):
     return type
 
 def get_matching_socket(context, material, texname):
-    shader = material.node_tree.nodes['Principled BSDF']
+    shader = get_surface_shader(material)
     sockets = shader.inputs
     textype = get_texture_type(context, material, texname)
     for x in sockets:
@@ -126,14 +133,14 @@ def connect_binding(context, material, binding):
     if binding.connected == True:
         return
 
-    shader = material.node_tree.nodes['Principled BSDF']
+    shader = get_surface_shader(material)
 
     # create uv mapping node
     texcoord = [x for x in material.node_tree.nodes if x.bl_idname == 'ShaderNodeTexCoord'][0]
     uv_node = material.node_tree.nodes.new('ShaderNodeMapping')
     uv_node.vector_type = 'TEXTURE'
-    uv_node.inputs['Location'].default_value = [0.0, -1.0, 0.0]
-    uv_node.inputs['Rotation'].default_value = [-0.0, -0.0, -0.0]
+    #uv_node.inputs['Location'].default_value = [0.0, -1.0, 0.0]
+    #uv_node.inputs['Rotation'].default_value = [-0.0, -0.0, -0.0]
     material.node_tree.links.new(texcoord.outputs['UV'], uv_node.inputs['Vector'])
 
     # set up image
