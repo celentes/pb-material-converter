@@ -249,7 +249,7 @@ class PBMC_Dialog(c4d.gui.GeDialog):
                 newmat = self.rnd.upgrade_material(m, [self.directory])
                 replace_material(doc, m, newmat)
             c4d.EventAdd(c4d.EVENT_FORCEREDRAW)
-            self.AskClose()
+            self.Close()
 
         if id == SG_TEXTURE_DIR:
             self.texture_dir_hide = not self.texture_dir_hide
