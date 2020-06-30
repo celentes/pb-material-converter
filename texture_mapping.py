@@ -6,6 +6,7 @@ SUPPORTED_EXTENSIONS = [
     ".jpeg",
     ".psd",
     ".tiff",
+    ".tif",
     ".tga",
     ".bmp",
     ".png",

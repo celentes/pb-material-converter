@@ -45,7 +45,7 @@ def create_material(name):
     ID_OCTANE_MATERIAL=1029501
     mat = c4d.BaseMaterial(ID_OCTANE_MATERIAL)
     mat[c4d.OCT_MATERIAL_TYPE] = c4d.OCT_MAT_UNIVERSAL
-    mat[c4d.OCT_MAT_BRDF_MODEL] = c4d.OCT_MAT_BRDF_GGX
+    mat[c4d.OCT_MAT_BRDF_MODEL] = c4d.OCT_MAT_BRDF_OCTANE
     mat.SetName(name)
     return mat
 
