@@ -14,7 +14,7 @@ def get_material_texture_paths_c4d(material):
     while it != None:
         shaders.append(it)
         it = it.GetNext()
-    return [x[c4d.BITMAPSHADER_FILENAME] for x in shaders]
+    return [os.path.abspath(x[c4d.BITMAPSHADER_FILENAME]) for x in shaders]
 
 def get_directory_hints_c4d():
     mats = get_all_materials_c4d()
@@ -37,10 +37,13 @@ def get_all_objects(doc):
 
 def replace_material(doc, oldmat, newmat):
     ID_MATERIAL_TAG = 5616
-    objects = [x for x in get_all_objects(doc) if x.GetTag(ID_MATERIAL_TAG) is not None]
-    objects = [x for x in objects if x.GetTag(ID_MATERIAL_TAG)[c4d.TEXTURETAG_MATERIAL] == oldmat]
-    for x in objects:
-        x.GetTag(ID_MATERIAL_TAG)[c4d.TEXTURETAG_MATERIAL] = newmat
+    objects = [x for x in get_all_objects(doc)]
+    tags = []
+    for o in objects:
+        tags.extend([x for x in o.GetTags() if x.GetType() == ID_MATERIAL_TAG])
+    filtered = [x for x in tags if x[c4d.TEXTURETAG_MATERIAL] == oldmat]
+    for x in filtered:
+        x[c4d.TEXTURETAG_MATERIAL] = newmat
     oldmat.Remove()
 
 SCROLLGRP_MAIN=500

@@ -46,7 +46,7 @@ def create_material(name):
     mat = c4d.BaseMaterial(ID_OCTANE_MATERIAL)
     mat[c4d.OCT_MATERIAL_TYPE] = c4d.OCT_MAT_UNIVERSAL
     mat[c4d.OCT_MAT_BRDF_MODEL] = c4d.OCT_MAT_BRDF_GGX
-    mat.SetName(name+"_octane")
+    mat.SetName(name)
     return mat
 
 def bind_texture(mat, tex_path, binding):
