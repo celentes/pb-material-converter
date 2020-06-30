@@ -12,6 +12,7 @@ SUPPORTED_EXTENSIONS = [
     ".png",
     ".b3d",
     ".iff",
+    ".exr",
 ]
 
 TEXTURE_TYPE_DICT = {
