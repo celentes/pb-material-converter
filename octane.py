@@ -46,6 +46,8 @@ def create_material(name):
     mat = c4d.BaseMaterial(ID_OCTANE_MATERIAL)
     mat[c4d.OCT_MATERIAL_TYPE] = c4d.OCT_MAT_UNIVERSAL
     mat[c4d.OCT_MAT_BRDF_MODEL] = c4d.OCT_MAT_BRDF_OCTANE
+    mat[c4d.OCT_MAT_USE_DISPLACEMENT] = 0
+    mat[c4d.OCT_MAT_SPECULAR_MAP_FLOAT] = 0.0
     mat.SetName(name)
     return mat
 
@@ -66,15 +68,22 @@ def bind_texture(mat, tex_path, binding):
         emi_shd[c4d.TEXEMISSION_EFFIC_OR_TEX] = img_shd
         return
 
+    if binding.name() == "Metallic":
+        mat[c4d.OCT_MAT_SPECULAR_MAP_FLOAT] = 1.0
+
     # Displacement quirk
     if binding.name() == "Displacement":
         ID_DISPLACEMENT_SHADER = 1031901
         dis_shd = c4d.BaseShader(ID_DISPLACEMENT_SHADER)
         dis_shd.SetName("Displacement")
+        dis_shd[c4d.DISPLACEMENT_AMOUNT] = 1.0
+        dis_shd[c4d.DISPLACEMENT_MID] = 0.5
+        dis_shd[c4d.DISPLACEMENT_LEVELOFDETAIL] = 12
 
         img_shd = create_texture(tex_path)
         img_shd.SetName(binding.name())
 
+        mat[c4d.OCT_MAT_USE_DISPLACEMENT] = 1
         mat.InsertShader(dis_shd)
         mat[binding.id()] = dis_shd
 
