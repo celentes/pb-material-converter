@@ -22,9 +22,23 @@ def get_directory_hints_c4d():
     [tf_list.extend(get_material_texture_paths_c4d(m)) for m in mats]
     return get_directory_hints(tf_list)
 
+def recursive_apply(obj, op):
+    while (obj):
+        op(obj)
+        recursive_apply(obj.GetDown(), op)
+        obj = obj.GetNext()
+
+def get_all_objects(doc):
+    objects = []
+    a = lambda o: objects.append(o)
+    for x in doc.GetObjects():
+        recursive_apply(x, a)
+    return objects
+
 def replace_material(doc, oldmat, newmat):
     ID_MATERIAL_TAG = 5616
-    objects = [x for x in doc.GetObjects() if x.GetTag(ID_MATERIAL_TAG)[c4d.TEXTURETAG_MATERIAL] == oldmat]
+    objects = [x for x in get_all_objects(doc) if x.GetTag(ID_MATERIAL_TAG) is not None]
+    objects = [x for x in objects if x.GetTag(ID_MATERIAL_TAG)[c4d.TEXTURETAG_MATERIAL] == oldmat]
     for x in objects:
         x.GetTag(ID_MATERIAL_TAG)[c4d.TEXTURETAG_MATERIAL] = newmat
     oldmat.Remove()
