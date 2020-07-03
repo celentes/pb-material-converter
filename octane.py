@@ -83,7 +83,7 @@ def bind_texture(mat, tex_path, binding):
         img_shd = create_texture(tex_path)
         img_shd.SetName(binding.name())
 
-        mat[c4d.OCT_MAT_USE_DISPLACEMENT] = 1
+        #mat[c4d.OCT_MAT_USE_DISPLACEMENT] = 1
         mat.InsertShader(dis_shd)
         mat[binding.id()] = dis_shd
 
