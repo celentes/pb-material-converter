@@ -1,5 +1,5 @@
 bl_info = {
-    "name":        "JDR Material Converter",
+    "name":        "Photobash Material Converter",
     "description": "Upgrade materials with missing texture nodes",
     "author":      "Tim Talashok, t.talashok@gmail.com",
     "version":     (0, 2, 0),
