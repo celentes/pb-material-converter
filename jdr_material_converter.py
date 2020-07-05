@@ -6,11 +6,14 @@ bl_info = {
     "blender":     (2, 82, 0)
 }
 
-import bpy, os, re
+import bpy, os, re, sys
+d = os.path.dirname(bpy.data.filepath)
+if not d in sys.path:
+    sys.path.append(d)
 
 def texture_directories(context):
     jdr_props = context.window_manager.jdr_props
-    return [x.directory for x in jdr_props.directories_list]
+    return [jdr_props.directory]
 
 def get_surface_shader(material):
     return material.node_tree.nodes['Material Output'].inputs['Surface'].links[0].from_node
@@ -54,51 +57,57 @@ class JDR_texture_binding(bpy.types.PropertyGroup):
 
 class JDR_material_props(bpy.types.PropertyGroup):
     material: bpy.props.PointerProperty(name="Material", type=bpy.types.Material)
-    show: bpy.props.BoolProperty(name = "Bindings", default=False)
-    selected: bpy.props.BoolProperty(name = "", default=False)
+    selected: bpy.props.BoolProperty(name = "", default=True)
     bindings: bpy.props.CollectionProperty(type=JDR_texture_binding)
+    show_bindings: bpy.props.BoolProperty(default=False)
 
     def draw(self, layout, context):
-        box = layout.box()
-        col = box.column(align=True)
-        for x in self.bindings:
-            row = col.row(align=True)
-            texname = os.path.splitext(os.path.basename(x.path))[0]
-            row.label(text=texname)
-            row.label(text=x.socket)
-            #row.prop(x,"exclude")
+        m_col = layout.column(align=True)
+        row = m_col.row(align=True)
+        row.alignment = 'LEFT'
+        row.emboss = 'PULLDOWN_MENU'
+        row.prop(self,
+                "show_bindings",
+                text="    " + self.material.name,
+                icon = "DOWNARROW_HLT" if self.show_bindings else "RIGHTARROW",
+                emboss=False)
+        if self.show_bindings:
+            m_col.separator()
+            _col = m_col.column(align=True)
+            _col.alignment = 'LEFT'
+            row = _col.row(align=True)
+            row.alignment = 'LEFT'
+            row.label(text="  ")
+            col = row.column(align=True)
+            col.alignment = 'LEFT'
+            for x in self.bindings:
+                texname = os.path.splitext(os.path.basename(x.path))[0]
+                col.row().label(text=texname)
+                r = col.row()
+                r.enabled = False
+                icon = "UNLINKED" if x.socket == "" else "LINKED"
+                r.label(text="  " + x.socket, icon=icon)
+                col.separator()
+                #row.prop(x,"exclude")
 
-def delete_dirline(self, context):
-    dirlist = context.window_manager.jdr_props.directories_list
-    # bloody hack because blender collections are stupid
-    i = 0
-    for dir in dirlist:
-        if dir.delete==True:
-            dirlist.remove(i)
-        i += 1
-    return None
-
-class JDR_directory_line(bpy.types.PropertyGroup):
-    directory: bpy.props.StringProperty(name="")
-    delete: bpy.props.BoolProperty(name="", default=False, update=delete_dirline)
+RENDERERS = [
+    ("CYCLES", "Eevee/Cycles", ""),
+    ("OCTANE", "Octane", ""),
+]
 
 class JDR_props(bpy.types.PropertyGroup):
     mat_props_list: bpy.props.CollectionProperty(type=JDR_material_props)
-    directories_list: bpy.props.CollectionProperty(type=JDR_directory_line)
+    directory: bpy.props.StringProperty(name="", subtype='DIR_PATH')
     scanned: bpy.props.BoolProperty(default=False)
-
-class JDR_add_directory(bpy.types.Operator):
-    bl_idname = "jdr.add_directory"
-    bl_label = "Add directory"
-
-    def execute(self, context):
-        context.window_manager.jdr_props.directories_list.add()
-        return {'FINISHED'}
+    select_all: bpy.props.BoolProperty(default=False)
+    show_dir: bpy.props.BoolProperty(default=False)
+    show_bindings: bpy.props.BoolProperty(default=False)
+    #renderer: bpy.props.EnumProperty(
 
 def mat_props_list_update(context, materials):
     jdr_props = context.window_manager.jdr_props
     jdr_props.mat_props_list.clear()
-    jdr_props.directories_list.clear()
+    jdr_props.directory = ""
     jdr_props.scanned = False
 
     # fill out directory suggestions
@@ -106,9 +115,8 @@ def mat_props_list_update(context, materials):
     for mat in materials:
         textures.extend([x.image for x in mat.node_tree.nodes if x.bl_idname == 'ShaderNodeTexImage'])
     directory_hints = {os.path.dirname(x.filepath_from_user()) for x in textures}
-    for x in directory_hints:
-        dir = jdr_props.directories_list.add()
-        dir.directory = x
+    if len(directory_hints) > 0:
+        jdr_props.directory = directory_hints.pop()
 
     # fill out material props
     for mat in materials:
@@ -161,6 +169,7 @@ class JDR_scan_materials(bpy.types.Operator):
 
     def execute(self, context):
         materials = [x.active_material for x in bpy.data.objects if x.active_material is not None]
+        jdr_props = context.window_manager.jdr_props
         mat_props_list_update(context, materials)
         return {'FINISHED'}
 
@@ -183,22 +192,14 @@ class JDR_select_all_materials(bpy.types.Operator):
     bl_label = "Select all"
 
     def execute(self, context):
+        b = all([mprop.selected for mprop in context.window_manager.jdr_props.mat_props_list])
         for mprop in context.window_manager.jdr_props.mat_props_list:
-            mprop.selected = True
-        return {'FINISHED'}
-
-class JDR_deselect_all_materials(bpy.types.Operator):
-    bl_idname = "jdr.deselect_all_materials"
-    bl_label = "Deselect all"
-
-    def execute(self, context):
-        for mprop in context.window_manager.jdr_props.mat_props_list:
-            mprop.selected = False
+            mprop.selected = not b
         return {'FINISHED'}
 
 class JDR_PT_main_panel(bpy.types.Panel):
     bl_idname = "JDRMC_UI"
-    bl_label = "JDR Material Converter"
+    bl_label = "Photobash Material Converter"
     bl_space_type = "PROPERTIES"
     bl_region_type = 'WINDOW'
     bl_context = "material"
@@ -206,28 +207,19 @@ class JDR_PT_main_panel(bpy.types.Panel):
     def draw(self, context):
         jdr_props = context.window_manager.jdr_props
         row = self.layout.row()
-        row.operator("jdr.scan_materials")
+        row.operator("jdr.scan_materials", icon="VIEWZOOM")
 
         if (jdr_props.scanned is False):
             return
 
-        self.layout.separator()
-        dirs_row = self.layout.row(align=True)
-        dirs_row.label(text="Texture directories")
-        dirs_row.operator("jdr.add_directory")
-
-        dirbox = self.layout.box()
-        db_col = dirbox.column(align=True)
-        for dirline in jdr_props.directories_list:
-            dbc_row = db_col.row()
-            dbc_row.prop(dirline, "directory")
-            dbc_row.prop(dirline, "delete", icon="X")
-
-        self.layout.separator()
+        nr_mats = len(jdr_props.mat_props_list)
         mats_row = self.layout.row(align=True)
-        mats_row.label(text="Materials")
-        mats_row.operator("jdr.select_all_materials")
-        mats_row.operator("jdr.deselect_all_materials")
+        mats_row.label(text="  " + str(nr_mats) + " Materials Found")
+        mm_row = mats_row.row(align=True)
+        mm_row.alignment = 'RIGHT'
+        sa_icon = "CHECKBOX_HLT" if all([mprop.selected for mprop in context.window_manager.jdr_props.mat_props_list]) else "CHECKBOX_DEHLT"
+        mm_row.operator("jdr.select_all_materials", emboss=False)
+        mm_row.operator("jdr.select_all_materials", text="", emboss=False, icon=sa_icon)
 
         matbox = self.layout.box()
         mb_col = matbox.column(align=True)
@@ -238,30 +230,43 @@ class JDR_PT_main_panel(bpy.types.Panel):
             mbc_row.prop(mprop, "selected")
         selected_matprops = [x for x in jdr_props.mat_props_list if x.selected == True]
 
-        col = self.layout.column(align=True)
-        col.scale_y = 0.8
-        for mprop in selected_matprops:
-            mat = mprop.material
-            #mprops['material'] = mat
-            #mprops.directory = directory_hints.pop()
-            icon = "TRIA_DOWN" if mprop.show else "TRIA_RIGHT"
-            row = col.row()
-            row.column(align=True).prop(mprop, "show", icon=icon)
-            row.column(align=True).label(text=mat.name)
-            if mprop.show:
-                mprop.draw(col.row(), context)
+        col = self.layout.column()
+
+        # material bindings
+        mp_row = col.row()
+        mp_row.emboss = 'PULLDOWN_MENU'
+        mp_row.prop(jdr_props,
+                "show_bindings",
+                text="View Material Links",
+                icon = "TRIA_DOWN" if jdr_props.show_bindings else "TRIA_RIGHT",
+                emboss=True)
+        if jdr_props.show_bindings:
+            mp_box = col.box().column(align=True)
+            mp_box.scale_y = 0.8
+            for mprop in selected_matprops:
+                mprop.draw(mp_box, context)
+
+        # texture directory
+        tex_row = col.row()
+        tex_row.emboss = 'PULLDOWN_MENU'
+        tex_row.prop(jdr_props,
+                "show_dir",
+                text="Edit Texture Folder",
+                icon = "TRIA_DOWN" if jdr_props.show_dir else "TRIA_RIGHT",
+                emboss=True)
+        if jdr_props.show_dir:
+            dirs_row = self.layout.row(align=True)
+            dirs_row.prop(jdr_props, "directory")
+
         if len(selected_matprops) > 0:
             self.layout.row().operator("jdr.upgrade_materials")
 
 classes = (
     JDR_texture_binding,
     JDR_material_props,
-    JDR_directory_line,
     JDR_props,
-    JDR_add_directory,
     JDR_scan_materials,
     JDR_select_all_materials,
-    JDR_deselect_all_materials,
     JDR_upgrade_materials,
     JDR_PT_main_panel
 )
@@ -277,3 +282,6 @@ def unregister():
 
     for c in reversed(classes):
         bpy.utils.unregister_class(c)
+
+if __name__ == "__main__":
+    register()
