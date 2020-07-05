@@ -141,7 +141,8 @@ def connect_binding(context, material, binding):
     shader = get_surface_shader(material)
 
     # create uv mapping node
-    texcoord = [x for x in material.node_tree.nodes if x.bl_idname == 'ShaderNodeTexCoord'][0]
+    tc_nodes = [x for x in material.node_tree.nodes if x.bl_idname == 'ShaderNodeTexCoord']
+    texcoord = material.node_tree.nodes.new('ShaderNodeTexCoord') if len(tc_nodes) == 0 else tc_nodes[0]
     uv_node = material.node_tree.nodes.new('ShaderNodeMapping')
     uv_node.vector_type = 'TEXTURE'
     #uv_node.inputs['Location'].default_value = [0.0, -1.0, 0.0]

@@ -1,11 +1,11 @@
 #!/bin/bash
-mkdir jdr_material_converter
-cp jdr_material_converter.py jdr_material_converter
-cp __init__.py jdr_material_converter
-cp eevee.py jdr_material_converter
-cp octane.py jdr_material_converter
-cp ../texture_mapping.py jdr_material_converter
+mkdir pbmc_blender
+cp jdr_material_converter.py pbmc_blender
+cp __init__.py pbmc_blender
+cp eevee.py pbmc_blender
+cp octane.py pbmc_blender
+cp ../texture_mapping.py pbmc_blender
 #cp texture_mapping.py blender_pbmc
 rm *.zip
-zip -r jdr_material_converter.zip jdr_material_converter
-rm -rf jdr_material_converter
+zip -r pbmc_blender.zip pbmc_blender
+rm -rf pbmc_blender
