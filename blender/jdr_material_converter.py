@@ -1,52 +1,26 @@
-bl_info = {
-    "name":        "JDR Material Converter",
-    "description": "Upgrade materials with missing texture nodes",
-    "author":      "Tim Talashok, t.talashok@gmail.com",
-    "version":     (0, 1, 0),
-    "blender":     (2, 82, 0)
-}
+import bpy
+import os
+import re
+import sys
 
-import bpy, os, re, sys
-d = os.path.dirname(bpy.data.filepath)
-if not d in sys.path:
-    sys.path.append(d)
-
-def texture_directories(context):
-    jdr_props = context.window_manager.jdr_props
-    return [jdr_props.directory]
+from . import texture_mapping as tm
+from . import eevee
 
 def get_surface_shader(material):
     return material.node_tree.nodes['Material Output'].inputs['Surface'].links[0].from_node
 
-def is_standard_surface(surfaceShader):
-    return surfaceShader.bl_idname == 'ShaderNodeBsdfPrincipled'
-
 def is_octane_surface(surfaceShader):
     return surfaceShader.bl_idname == 'ShaderNodeOctUniversalMat'
 
-def get_material_textures(context, material):
-    files = []
-    for dir in texture_directories(context):
-        files.extend([os.path.join(dir,f) for f in os.listdir(dir) if os.path.isfile(os.path.join(dir,f))])
-    return [x for x in files if re.search(material.name, os.path.basename(x), flags=re.IGNORECASE)]
-
-def get_texture_type(context, material, texname):
-    cutoff = texname.find(material.name) + len(material.name)
-    if texname[cutoff] == '_':
-        cutoff += 1
-    type = texname[cutoff:]
-    if type[-3:] == "ive":
-        type = type[:-3]
-    elif type[-4:] == "ness":
-        type = type[:-4]
-    return type
-
 def get_matching_socket(context, material, texname):
+    jdr_props = context.window_manager.jdr_props
+
     shader = get_surface_shader(material)
     sockets = shader.inputs
-    textype = get_texture_type(context, material, texname)
+    textype = tm.get_texture_type(material.name, texname)
+
     for x in sockets:
-        if re.search(textype, x.name):
+        if re.search(eevee.map_texture_type(textype), x.name):
             return x
     return None
 
@@ -102,7 +76,7 @@ class JDR_props(bpy.types.PropertyGroup):
     select_all: bpy.props.BoolProperty(default=False)
     show_dir: bpy.props.BoolProperty(default=False)
     show_bindings: bpy.props.BoolProperty(default=False)
-    #renderer: bpy.props.EnumProperty(
+    renderer: bpy.props.EnumProperty(items=RENDERERS)
 
 def mat_props_list_update(context, materials):
     jdr_props = context.window_manager.jdr_props
@@ -114,17 +88,17 @@ def mat_props_list_update(context, materials):
     textures = []
     for mat in materials:
         textures.extend([x.image for x in mat.node_tree.nodes if x.bl_idname == 'ShaderNodeTexImage'])
-    directory_hints = {os.path.dirname(x.filepath_from_user()) for x in textures}
+    texture_paths = [os.path.abspath(x.filepath_from_user()) for x in textures]
+    directory_hints = tm.get_directory_hints(texture_paths)
     if len(directory_hints) > 0:
-        jdr_props.directory = directory_hints.pop()
+        jdr_props.directory = directory_hints[0]
 
     # fill out material props
     for mat in materials:
         mprop = jdr_props.mat_props_list.add()
         mprop.material = mat
         mat_textures = [x.image for x in mat.node_tree.nodes if x.bl_idname == 'ShaderNodeTexImage']
-        blacklist = [x.filepath_from_user() for x in mat_textures]
-        texnames = [x for x in get_material_textures(context,mat) if x not in blacklist]
+        texnames = [x for x in tm.get_texture_filenames([jdr_props.directory], mat.name)]
         for tn in texnames:
             texname = os.path.splitext(os.path.basename(tn))[0]
             socket = get_matching_socket(context,mat,texname)
@@ -134,6 +108,16 @@ def mat_props_list_update(context, materials):
 
     jdr_props.scanned = True
     return
+
+def clear_material(material):
+    nodes = material.node_tree.nodes
+    to_remove = []
+    to_remove.extend([x for x in nodes if x.bl_idname == 'ShaderNodeTexImage'])
+    to_remove.extend([x for x in nodes if x.bl_idname == 'ShaderNodeMapping'])
+    to_remove.extend([x for x in nodes if x.bl_idname == 'ShaderNodeNormalMap'])
+
+    for n in to_remove:
+        nodes.remove(n)
 
 def connect_binding(context, material, binding):
     if binding.socket == "":
@@ -158,10 +142,15 @@ def connect_binding(context, material, binding):
 
     # set up final link
     socket = shader.inputs[binding.socket]
-    material.node_tree.links.new(img_node.outputs['Color'], socket)
+
+    if socket.name == "Normal":
+        nm_node = material.node_tree.nodes.new('ShaderNodeNormalMap')
+        material.node_tree.links.new(img_node.outputs['Color'], nm_node.inputs['Color'])
+        material.node_tree.links.new(nm_node.outputs['Normal'], socket)
+    else:
+        material.node_tree.links.new(img_node.outputs['Color'], socket)
 
     binding.connected = True
-    pass
 
 class JDR_scan_materials(bpy.types.Operator):
     bl_idname = "jdr.scan_materials"
@@ -183,6 +172,7 @@ class JDR_upgrade_materials(bpy.types.Operator):
             self.report({"WARNING"}, "No materials have been selected")
             return {'FINISHED'}
         for mprop in jdr_props.mat_props_list:
+            clear_material(mprop.material)
             for binding in mprop.bindings:
                 connect_binding(context, mprop.material, binding)
         return {'FINISHED'}
@@ -258,8 +248,11 @@ class JDR_PT_main_panel(bpy.types.Panel):
             dirs_row = self.layout.row(align=True)
             dirs_row.prop(jdr_props, "directory")
 
+        # choose renderer
+        col.row().prop(jdr_props, "renderer", text = "Renderer")
+
         if len(selected_matprops) > 0:
-            self.layout.row().operator("jdr.upgrade_materials")
+            self.layout.row().operator("jdr.upgrade_materials", text="Convert Selected Materials", icon="MATERIAL")
 
 classes = (
     JDR_texture_binding,
@@ -282,6 +275,3 @@ def unregister():
 
     for c in reversed(classes):
         bpy.utils.unregister_class(c)
-
-if __name__ == "__main__":
-    register()
