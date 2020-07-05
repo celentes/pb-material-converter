@@ -6,23 +6,25 @@ import sys
 from . import texture_mapping as tm
 from . import eevee
 
+RENDERERS = [
+    ("CYCLES", "Eevee/Cycles", ""),
+    ("OCTANE", "Octane", ""),
+]
+
+RENDERER_BACKENDS = {
+    "CYCLES" : eevee
+}
+
 def get_surface_shader(material):
     return material.node_tree.nodes['Material Output'].inputs['Surface'].links[0].from_node
 
 def is_octane_surface(surfaceShader):
     return surfaceShader.bl_idname == 'ShaderNodeOctUniversalMat'
 
-def get_matching_socket(context, material, texname):
-    jdr_props = context.window_manager.jdr_props
-
-    shader = get_surface_shader(material)
-    sockets = shader.inputs
+def get_matching_textype(context, material, texname):
+    renderer = RENDERER_BACKENDS[context.window_manager.jdr_props.renderer]
     textype = tm.get_texture_type(material.name, texname)
-
-    for x in sockets:
-        if re.search(eevee.map_texture_type(textype), x.name):
-            return x
-    return None
+    return renderer.map_texture_type(textype)
 
 class JDR_texture_binding(bpy.types.PropertyGroup):
     connected: bpy.props.BoolProperty(name = "", default=False)
@@ -59,15 +61,10 @@ class JDR_material_props(bpy.types.PropertyGroup):
                 col.row().label(text=texname)
                 r = col.row()
                 r.enabled = False
-                icon = "UNLINKED" if x.socket == "" else "LINKED"
+                icon = "UNLINKED" if x.socket == tm.NOTMAPPED_STR else "LINKED"
                 r.label(text="  " + x.socket, icon=icon)
                 col.separator()
                 #row.prop(x,"exclude")
-
-RENDERERS = [
-    ("CYCLES", "Eevee/Cycles", ""),
-    ("OCTANE", "Octane", ""),
-]
 
 class JDR_props(bpy.types.PropertyGroup):
     mat_props_list: bpy.props.CollectionProperty(type=JDR_material_props)
@@ -101,10 +98,9 @@ def mat_props_list_update(context, materials):
         texnames = [x for x in tm.get_texture_filenames([jdr_props.directory], mat.name)]
         for tn in texnames:
             texname = os.path.splitext(os.path.basename(tn))[0]
-            socket = get_matching_socket(context,mat,texname)
             binding = mprop.bindings.add()
             binding.path = tn
-            binding.socket = "" if socket == None else socket.name
+            binding.socket = get_matching_textype(context,mat,texname)
 
     jdr_props.scanned = True
     return
@@ -120,7 +116,7 @@ def clear_material(material):
         nodes.remove(n)
 
 def connect_binding(context, material, binding):
-    if binding.socket == "":
+    if binding.socket == tm.NOTMAPPED_STR:
         return
     if binding.connected == True:
         return
