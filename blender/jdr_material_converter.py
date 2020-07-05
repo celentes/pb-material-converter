@@ -5,6 +5,7 @@ import sys
 
 from . import texture_mapping as tm
 from . import eevee
+from . import octane
 
 RENDERERS = [
     ("CYCLES", "Eevee/Cycles", ""),
@@ -12,8 +13,14 @@ RENDERERS = [
 ]
 
 RENDERER_BACKENDS = {
-    "CYCLES" : eevee
+    "CYCLES" : eevee,
+    "OCTANE" : octane,
 }
+
+def renderer_update(self, context):
+    materials = [x.active_material for x in bpy.data.objects if x.active_material is not None]
+    jdr_props = context.window_manager.jdr_props
+    mat_props_list_update(context, materials)
 
 def get_surface_shader(material):
     return material.node_tree.nodes['Material Output'].inputs['Surface'].links[0].from_node
@@ -73,7 +80,7 @@ class JDR_props(bpy.types.PropertyGroup):
     select_all: bpy.props.BoolProperty(default=False)
     show_dir: bpy.props.BoolProperty(default=False)
     show_bindings: bpy.props.BoolProperty(default=False)
-    renderer: bpy.props.EnumProperty(items=RENDERERS)
+    renderer: bpy.props.EnumProperty(items=RENDERERS, update=renderer_update)
 
 def mat_props_list_update(context, materials):
     jdr_props = context.window_manager.jdr_props
@@ -105,8 +112,18 @@ def mat_props_list_update(context, materials):
     jdr_props.scanned = True
     return
 
-def clear_material(material):
+def clear_material(context, material):
+    jdr_props = context.window_manager.jdr_props
+    renderer = RENDERER_BACKENDS[jdr_props.renderer]
     nodes = material.node_tree.nodes
+    surface = get_surface_shader(material)
+
+    if not renderer.is_surface_correct(surface):
+        nodes.remove(surface)
+        input_socket = nodes['Material Output'].inputs['Surface']
+        surface = nodes.new(renderer.material_node())
+        material.node_tree.links.new(surface.outputs[renderer.surface_output()], input_socket)
+
     to_remove = []
     to_remove.extend([x for x in nodes if x.bl_idname == 'ShaderNodeTexImage'])
     to_remove.extend([x for x in nodes if x.bl_idname == 'ShaderNodeMapping'])
@@ -139,7 +156,10 @@ def connect_binding(context, material, binding):
     # set up final link
     socket = shader.inputs[binding.socket]
 
-    if socket.name == "Normal":
+    renderer = RENDERER_BACKENDS[context.window_manager.jdr_props.renderer]
+    if socket.name == "Displacement":
+        renderer.map_displacement(material, img_node)
+    elif socket.name == "Normal":
         nm_node = material.node_tree.nodes.new('ShaderNodeNormalMap')
         material.node_tree.links.new(img_node.outputs['Color'], nm_node.inputs['Color'])
         material.node_tree.links.new(nm_node.outputs['Normal'], socket)
@@ -168,7 +188,7 @@ class JDR_upgrade_materials(bpy.types.Operator):
             self.report({"WARNING"}, "No materials have been selected")
             return {'FINISHED'}
         for mprop in jdr_props.mat_props_list:
-            clear_material(mprop.material)
+            clear_material(context, mprop.material)
             for binding in mprop.bindings:
                 connect_binding(context, mprop.material, binding)
         return {'FINISHED'}

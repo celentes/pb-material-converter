@@ -11,8 +11,14 @@ TEXTURE_MAPPING = {
     "Opacity" : "Alpha",
 }
 
+def material_node():
+    return 'ShaderNodeBsdfPrincipled'
+
+def surface_output():
+    return 'BSDF'
+
 def is_surface_correct(surfaceShader):
-    return surfaceShader.bl_idname == 'ShaderNodeBsdfPrincipled'
+    return surfaceShader.bl_idname == material_node()
 
 def map_texture_type(textype):
     if textype in TEXTURE_MAPPING:
