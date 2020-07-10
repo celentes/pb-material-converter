@@ -7,4 +7,4 @@ cp arnold.py c4d_pbmc/src
 cp octane.py c4d_pbmc/src
 cp vray.py c4d_pbmc/src
 cp UI.py c4d_pbmc/src
-cp texture_mapping.py c4d_pbmc/src
+cp ../common/texture_mapping.py c4d_pbmc/src
