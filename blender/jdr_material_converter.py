@@ -135,6 +135,7 @@ def clear_material(context, material):
     to_remove.extend([x for x in nodes if x.bl_idname == 'ShaderNodeTexImage'])
     to_remove.extend([x for x in nodes if x.bl_idname == 'ShaderNodeMapping'])
     to_remove.extend([x for x in nodes if x.bl_idname == 'ShaderNodeNormalMap'])
+    to_remove.extend([x for x in nodes if x.bl_idname == 'ShaderNodeDisplacement'])
 
     for n in to_remove:
         nodes.remove(n)
@@ -162,16 +163,16 @@ def connect_binding(context, material, binding):
     material.node_tree.links.new(uv_node.outputs['Vector'], img_node.inputs['Vector'])
 
     # set up final link
-    socket = shader.inputs[binding.socket]
-
     renderer = RENDERER_BACKENDS[context.window_manager.jdr_props.renderer]
-    if socket.name == "Displacement":
-        renderer.map_displacement(material, img_node)
-    elif socket.name == "Normal":
+    if binding.socket == "Normal":
+        socket = shader.inputs[binding.socket]
         nm_node = material.node_tree.nodes.new('ShaderNodeNormalMap')
         material.node_tree.links.new(img_node.outputs['Color'], nm_node.inputs['Color'])
         material.node_tree.links.new(nm_node.outputs['Normal'], socket)
+    elif binding.socket == "Displacement":
+        renderer.map_displacement(material, img_node)
     else:
+        socket = shader.inputs[binding.socket]
         material.node_tree.links.new(img_node.outputs['Color'], socket)
 
     binding.connected = True

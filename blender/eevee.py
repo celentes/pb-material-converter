@@ -9,6 +9,7 @@ TEXTURE_MAPPING = {
     "Emission" : "Emission",
     "Normal" : "Normal",
     "Opacity" : "Alpha",
+    "Displacement" : "Displacement",
 }
 
 def material_node():
@@ -26,4 +27,10 @@ def map_texture_type(textype):
     else:
         return tm.NOTMAPPED_STR
 
-
+def map_displacement(material, img_node):
+    displacement = material.node_tree.nodes.new('ShaderNodeDisplacement')
+    material.node_tree.links.new(displacement.outputs['Displacement'], material.node_tree.nodes['Material Output'].inputs['Displacement'])
+    material.node_tree.links.new(img_node.outputs['Color'], displacement.inputs['Height'])
+    normals = [x for x in material.node_tree.nodes if x.bl_idname == 'ShaderNodeNormalMap']
+    if len(normals) > 0:
+        material.node_tree.links.new(normals[0].outputs['Normal'], displacement.inputs['Normal'])
