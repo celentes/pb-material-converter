@@ -63,6 +63,8 @@ def get_directory_hints(texture_paths_list):
 def get_texture_filenames(directories, material_name=None):
     files = []
     for dir in directories:
+        if not os.path.exists(dir):
+            continue
         files.extend([os.path.join(dir,f) for f in os.listdir(dir) if os.path.isfile(os.path.join(dir,f))])
     # filter out accepted formats
     files = [x for x in files if os.path.splitext(x)[1].lower() in SUPPORTED_EXTENSIONS]

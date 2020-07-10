@@ -28,9 +28,9 @@ def get_surface_shader(material):
 def is_octane_surface(surfaceShader):
     return surfaceShader.bl_idname == 'ShaderNodeOctUniversalMat'
 
-def get_matching_textype(context, material, texname):
+def get_matching_textype(context, material_name, texname):
     renderer = RENDERER_BACKENDS[context.window_manager.jdr_props.renderer]
-    textype = tm.get_texture_type(material.name, texname)
+    textype = tm.get_texture_type(material_name, texname)
     return renderer.map_texture_type(textype)
 
 class JDR_texture_binding(bpy.types.PropertyGroup):
@@ -82,6 +82,12 @@ class JDR_props(bpy.types.PropertyGroup):
     show_bindings: bpy.props.BoolProperty(default=False)
     renderer: bpy.props.EnumProperty(items=RENDERERS, update=renderer_update)
 
+def truncate_material_suffix(material_name):
+    if re.search('\.[0-9][0-9][0-9]$', material_name):
+        return material_name[:-4]
+    else:
+        return material_name
+
 def mat_props_list_update(context, materials):
     jdr_props = context.window_manager.jdr_props
     jdr_props.mat_props_list.clear()
@@ -102,12 +108,13 @@ def mat_props_list_update(context, materials):
         mprop = jdr_props.mat_props_list.add()
         mprop.material = mat
         mat_textures = [x.image for x in mat.node_tree.nodes if x.bl_idname == 'ShaderNodeTexImage']
-        texnames = [x for x in tm.get_texture_filenames([jdr_props.directory], mat.name)]
+        mat_name = truncate_material_suffix(mat.name)
+        texnames = [x for x in tm.get_texture_filenames([jdr_props.directory], mat_name)]
         for tn in texnames:
             texname = os.path.splitext(os.path.basename(tn))[0]
             binding = mprop.bindings.add()
             binding.path = tn
-            binding.socket = get_matching_textype(context,mat,texname)
+            binding.socket = get_matching_textype(context,mat_name,texname)
 
     jdr_props.scanned = True
     return
@@ -171,11 +178,13 @@ def connect_binding(context, material, binding):
 
 class JDR_scan_materials(bpy.types.Operator):
     bl_idname = "jdr.scan_materials"
-    bl_label = "Scan materials"
+    bl_label = "Scan Materials"
 
     def execute(self, context):
         materials = [x.active_material for x in bpy.data.objects if x.active_material is not None]
-        jdr_props = context.window_manager.jdr_props
+        if len(materials) == 0:
+            self.report({'WARNING'}, "No active materials found")
+            return {'CANCELLED'}
         mat_props_list_update(context, materials)
         return {'FINISHED'}
 
@@ -207,9 +216,8 @@ class JDR_select_all_materials(bpy.types.Operator):
 class JDR_PT_main_panel(bpy.types.Panel):
     bl_idname = "JDRMC_UI"
     bl_label = "Photobash Material Converter"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = 'WINDOW'
-    bl_context = "material"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
 
     def draw(self, context):
         jdr_props = context.window_manager.jdr_props
