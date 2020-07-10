@@ -1,11 +1,9 @@
 #!/bin/bash
 mkdir pbmc_blender
-cp jdr_material_converter.py pbmc_blender
 cp __init__.py pbmc_blender
-cp eevee.py pbmc_blender
-cp octane.py pbmc_blender
-cp ../common/texture_mapping.py pbmc_blender
-#cp texture_mapping.py blender_pbmc
+python3.7 -m compileall eevee.py octane.py jdr_material_converter.py ../common/texture_mapping.py -b
+mv ../common/texture_mapping.pyc .
+mv *.pyc pbmc_blender
 rm *.zip
 zip -r pbmc_blender.zip pbmc_blender
 rm -rf pbmc_blender
