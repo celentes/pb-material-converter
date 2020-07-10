@@ -5,8 +5,9 @@ PLUGIN_ID = 1055192 # PhotobashMaterialConverter
 PLUGIN_PATH = os.path.split(__file__)[0]
 imp.load_compiled("texture_mapping", os.path.join(PLUGIN_PATH, "res", "texture_mapping.pyc"))
 imp.load_compiled("UI", os.path.join(PLUGIN_PATH, "res", "UI.pyc"))
+imp.load_compiled("physical", os.path.join(PLUGIN_PATH, "res", "physical.pyc"))
 
-import UI, texture_mapping
+import UI, texture_mapping, physical
 
 if c4d.plugins.FindPlugin(1041569) is not None:
   imp.load_compiled("octane", os.path.join(PLUGIN_PATH, "res", "octane.pyc"))

@@ -12,11 +12,14 @@ reload(octane)
 import UI
 reload(UI)
 
-import arnold
-reload(arnold)
+#import arnold
+#reload(arnold)
+#
+#import vray
+#reload(vray)
 
-import vray
-reload(vray)
+import physical
+reload(physical)
 
 # TODO: bloody specs
 

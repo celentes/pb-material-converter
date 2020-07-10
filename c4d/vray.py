@@ -10,14 +10,7 @@ class binding:
     def name(self):
         return self._name
 
-#VRayStandardMaterial[c4d.VRAYSTDMATERIAL_DIFFUSECOLOR_TEX]
-#VRayStandardMaterial[c4d.VRAYSTDMATERIAL_OPACITY_TEX]
-#VRayStandardMaterial[c4d.VRAYSTDMATERIAL_REFLECTGLOSSINESS_TEX]
-#VRayStandardMaterial[c4d.VRAYSTDMATERIAL_REFLECTCOLOR_TEX]
-#VRayStandardMaterial[c4d.VRAYSTDMATERIAL_SELFILLUMCOLOR_TEX]
-#VRayStandardMaterial[c4d.VRAYSTDMATERIAL_BUMP_BUMPMAP]
-
-VRAY_BINDINS = {
+VRAY_BINDINGS = {
     "Diffuse" : binding("Diffuse", c4d.VRAYSTDMATERIAL_DIFFUSECOLOR_TEX),
     "Specular" : binding("Reflection", c4d.VRAYSTDMATERIAL_REFLECTCOLOR_TEX),
     "Roughness" : binding("RGlossiness", c4d.VRAYSTDMATERIAL_REFLECTGLOSSINESS_TEX),
@@ -28,8 +21,8 @@ VRAY_BINDINS = {
 }
 
 def get_binding(tex_type):
-    if tex_type in VRAY_BINDINS:
-        return VRAY_BINDINS[tex_type]
+    if tex_type in VRAY_BINDINGS:
+        return VRAY_BINDINGS[tex_type]
     else:
         return None
 

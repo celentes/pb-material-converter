@@ -70,6 +70,7 @@ class PBMC_Dialog(c4d.gui.GeDialog):
     materials = []
     directory = ""
     renderers = dict()
+    rnd_ids = dict()
     rnd = None
 
     texture_dir_sg = None
@@ -79,22 +80,31 @@ class PBMC_Dialog(c4d.gui.GeDialog):
     bindings_hide = True
 
     def query_renderers(self):
+        i = 0
+        import physical
+        self.renderers["Physical"] = physical
+        self.rnd_ids[i] = "Physical"
+        self.rnd = physical
+        i += 1
+
         if c4d.plugins.FindPlugin(1038954) is not None:
             print "PBMC: Found vray plugin"
             import vray
             self.renderers["VRay"] = vray
-            self.rnd = vray
+            self.rnd_ids[i] = "VRay"
+            i += 1
         if c4d.plugins.FindPlugin(1041569) is not None:
             print "PBMC: Found octane plugin"
             import octane
             self.renderers["Octane"] = octane
-            self.rnd = octane
+            self.rnd_ids[i] = "Octane"
+            i += 1
         if c4d.plugins.FindPlugin(1033991) is not None:
             print "PBMC: Found arnold plugin"
             import arnold
             self.renderers["Arnold"] = arnold
-            self.rnd = arnold
-        # self.rnd = default
+            self.rnd_ids[i] = "Arnold"
+            i += 1
 
     def fill_materials(self, mats):
         self.materials = mats
@@ -139,7 +149,7 @@ class PBMC_Dialog(c4d.gui.GeDialog):
 
     def CreateLayout(self):
         self.SetTitle("Photobash Material Converter")
-        self.AddButton(BTN_SCAN_MATERIALS, c4d.BFH_SCALEFIT, name="Scan materials")
+        self.AddButton(BTN_SCAN_MATERIALS, c4d.BFH_SCALEFIT, name="Scan Materials")
 
         #self.ScrollGroupBegin(id=SCROLLGRP_MAIN, flags=c4d.BFH_SCALEFIT, inith=120, scrollflags=c4d.SCROLLGROUP_VERT)
         self.GroupBegin(id=GRP_CONTROL,flags=c4d.BFH_SCALEFIT,cols=1)
@@ -220,8 +230,8 @@ class PBMC_Dialog(c4d.gui.GeDialog):
         self.GroupBegin(id=CB_RENDERER+1, flags=c4d.BFH_SCALEFIT, cols=2)
         self.AddStaticText(id=CB_RENDERER+2, flags=c4d.BFH_LEFT, name="Renderer")
         rnd_bc = c4d.BaseContainer()
-        for i in range(len(self.renderers)):
-            rnd_bc.SetString(i, self.renderers.keys()[i])
+        for key in self.rnd_ids:
+            rnd_bc.SetString(key, self.rnd_ids[key])
         self.AddComboBox(id=CB_RENDERER,flags=c4d.BFH_SCALEFIT)
         self.AddChildren(CB_RENDERER, rnd_bc)
         self.GroupEnd()
@@ -280,7 +290,8 @@ class PBMC_Dialog(c4d.gui.GeDialog):
 
         if id == CB_RENDERER:
             _id = self.GetInt32(CB_RENDERER)
-            _name = self.renderers.keys()[_id]
+            _key = self.rnd_ids.keys()[_id]
+            _name = self.rnd_ids[_key]
             _rnd = self.renderers[_name]
             self.rnd = _rnd
             self.redraw_bindings()
