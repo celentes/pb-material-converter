@@ -191,7 +191,7 @@ class JDR_scan_materials(bpy.types.Operator):
 
 class JDR_upgrade_materials(bpy.types.Operator):
     bl_idname = "jdr.upgrade_materials"
-    bl_label = "Upgrade selected materials"
+    bl_label = "Upgrade Selected Materials"
 
     def execute(self, context):
         jdr_props = context.window_manager.jdr_props
@@ -206,7 +206,7 @@ class JDR_upgrade_materials(bpy.types.Operator):
 
 class JDR_select_all_materials(bpy.types.Operator):
     bl_idname = "jdr.select_all_materials"
-    bl_label = "Select all"
+    bl_label = "Select All"
 
     def execute(self, context):
         b = all([mprop.selected for mprop in context.window_manager.jdr_props.mat_props_list])
