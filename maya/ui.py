@@ -5,8 +5,25 @@ import re
 
 #from . import logic
 
-def update(input):
-    print(input)
+class PBMC_props:
+    mats = None
+    dir = None
+    selection = dict()
+    windowWidth = 0
+    windowHeight = 0
+    window = None
+
+    def fill_materials(self, materials):
+        self.mats = [x for x in materials]
+        for x in self.mats:
+            self.selection[x] = True
+
+    def select_all(self):
+        all_selected = all(self.selection.values())
+        for x in self.selection.values():
+            x = not all_selected
+
+pbmc_props = None
 
 def truncate_material_name(mat):
     name = mat
@@ -17,76 +34,82 @@ def truncate_material_name(mat):
         name = name[-idx+1:]
     return name
 
-def fill_material_frame(mat):
-    texture_paths = get_material_texture_paths(mat) # logic
-    # TODO: move dir hints out
-    dir_hints = get_directory_hints(texture_paths) # tm
-    name = truncate_material_name(mat)
-
-    textures = get_texture_filenames(dir_hints, name) # tm
-
-    for t in textures:
-        mc.text(t, align='left')
-        mc.text(get_texture_type(name, t), align='left')
-
 def colorify(string, color):
     return "<font color=%s>%s</font>" % (color, string)
 
-def create_layout(master, width, materials, directory):
-    bdgsOffset = 20
-    bdgsFrame = mc.frameLayout(label="View Material Links", mw=bdgsOffset, mh=1, collapsable=True, collapse=True, p=master, width=width)
-    bdgsCol = mc.columnLayout(w=width-bdgsOffset, p=bdgsFrame, rs=2)
+def create_layout(master):
+    global pbmc_props
 
-    for m in materials:
-        frame = mc.frameLayout(label="%s" % m, collapsable=True, collapse=True, p=bdgsCol, width=width-bdgsOffset)
+    w1, w2, w3, w4 = 30, pbmc_props.windowWidth - 160, 100, 30
+
+    # materials found sublayout
+    mfCol = mc.columnLayout(w=pbmc_props.windowWidth, rs=2, p=master, bgc=[0.15, 0.15, 0.15])
+    mc.rowLayout(numberOfColumns=4, columnWidth4=[w1,w2,w3,w4], p=mfCol)
+    mc.text("") # skip child
+    mc.text("<b>%i</b> Materials Found" % len(pbmc_props.mats), al='left', w=w2)
+    mc.text("Select All", al='center', w=w3)
+    mc.checkBox("select_all", label="", width=w4)
+
+    # material selection sublayout
+    msCol = mc.columnLayout(w=pbmc_props.windowWidth, rs=2, p=master)
+    for m in pbmc_props.mats:
+        matRow = mc.rowLayout(numberOfColumns=4, columnWidth4=[w1,w2,w3,w4], p=msCol)
+        mc.text("1", visible=False) # skip child
+        mc.text(m, al='left', w=w2, font='boldLabelFont')
+        mc.text("2", visible=False) # skip child
+        mc.checkBox("%s_select" % m, label="", width=w4)
+
+    # bindings sublayout
+    bdgsOffset = 20
+    bdgsFrame = mc.frameLayout(label="View Material Links", mw=bdgsOffset, mh=1, collapsable=True, collapse=True, p=master, width=pbmc_props.windowWidth)
+    bdgsCol = mc.columnLayout(w=pbmc_props.windowWidth-bdgsOffset, p=bdgsFrame, rs=2)
+
+    for m in pbmc_props.mats:
+        frame = mc.frameLayout(label="%s" % m, collapsable=True, collapse=True, p=bdgsCol, width=pbmc_props.windowWidth-bdgsOffset)
         name = truncate_material_name(m)
-        for t in get_texture_filenames([directory], name): # tm
+        for t in get_texture_filenames([pbmc_props.dir], name): # tm
             mc.text(os.path.basename(t), align='left', font='boldLabelFont')
             mc.text(colorify(get_texture_type(name, t), 'grey'), align='left', font='boldLabelFont')
 
     # directory sublayout
-    dirFrame = mc.frameLayout(label="Edit Texture Folder", collapsable=True, collapse=True, p=master, width=width)
-    dirRow = mc.rowLayout(numberOfColumns=1, columnWidth3=(80,75,150), adjustableColumn=1, p=dirFrame, width=width)
-    mc.text(directory, align='left', bgc=[0.25, 0.25, 0.25], font='smallFixedWidthFont')
+    dirFrame = mc.frameLayout(label="Edit Texture Folder", collapsable=True, collapse=True, p=master, width=pbmc_props.windowWidth)
+    dirCol = mc.columnLayout(p=dirFrame, width=pbmc_props.windowWidth)
+    mc.separator()
+    mc.text(pbmc_props.dir, align='left', bgc=[0.25, 0.25, 0.25])
+
+def scan_materials_upd(master):
+    global pbmc_props
+
+    materials, directory = get_materials_and_directory() # logic
+    pbmc_props.fill_materials(materials)
+    pbmc_props.dir = directory
+    create_layout(master)
+
+def delete_ui():
+    global pbmc_props
+
+    mc.deleteUI(pbmc_props.window)
 
 def create_ui():
+    global pbmc_props
+
     windowID = "Photobash Material Converter"
-    wWidth = 600
-    wHeight = 470
 
-    materials = None
-    dir = None
+    if pbmc_props:
+        delete_ui()
 
-    window = mc.window(windowID, title=windowID, sizeable=False, mxb=False, rtf=False, width=wWidth, h=wHeight)
+    pbmc_props = PBMC_props()
+    pbmc_props.windowWidth = 500
+    pbmc_props.windowHeight = 600
+
+    pbmc_props.window = mc.window(windowID, title=windowID, sizeable=False, mxb=False, rtf=False, width=pbmc_props.windowWidth, h=pbmc_props.windowHeight)
 
     # master layout
-    col = mc.columnLayout(width=wWidth)
-
-    lambda scan_mats: materials, dir = get_materials_and_directory() # logic
+    col = mc.columnLayout(width=pbmc_props.windowWidth)
 
     mc.separator('sep')
     # scan materials
-    mc.button(label='Scan Materials', width=wWidth, height=20)
+    mc.button(label='Scan Materials', width=pbmc_props.windowWidth, height=20, command=lambda _: scan_materials_upd(col))
     mc.separator()
-
-    scan_mats()
-    create_layout(col, wWidth, materials, directory)
-    # bindings sublayout
-#    bdgsOffset = 20
-#    bdgsFrame = mc.frameLayout(label="View Material Links", mw=bdgsOffset, mh=1, collapsable=True, collapse=True, p=col, width=wWidth)
-#    bdgsCol = mc.columnLayout(w=wWidth-bdgsOffset, p=bdgsFrame, rs=2)
-#
-#    mats, dir = get_materials_and_directory() # logic
-#    for m in mats:
-#        frame = mc.frameLayout(label="%s" % m, collapsable=True, collapse=True, p=bdgsCol, width=wWidth-bdgsOffset)
-#        name = truncate_material_name(m)
-#        for t in get_texture_filenames([dir], name): # tm
-#            mc.text(os.path.basename(t), align='left', font='boldLabelFont')
-#            mc.text(colorify(get_texture_type(name, t), 'grey'), align='left', font='boldLabelFont')
-#
-#    # directory sublayout
-#    dirFrame = mc.frameLayout(label="Edit Texture Folder", collapsable=True, collapse=True, p=col, width=wWidth)
-#    dirRow = mc.rowLayout(numberOfColumns=1, columnWidth3=(80,75,150), adjustableColumn=1, p=dirFrame, width=wWidth)
-#    mc.text(dir, align='left', bgc=[0.25, 0.25, 0.25], font='smallFixedWidthFont')
 
     mc.showWindow()
