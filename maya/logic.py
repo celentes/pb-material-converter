@@ -16,6 +16,17 @@ def get_material_texture_paths(mat):
 
     return [mc.getAttr("%s.fileTextureName" % f) for f in fileNodes]
 
+def get_directory(mats):
+    texture_paths = []
+    for m in mats:
+        texture_paths.extend(get_material_texture_paths(m))
+    dir_hints = get_directory_hints(texture_paths) # tm
+    return dir_hints[0]
+
+def get_materials_and_directory():
+    mats = [x for x in get_materials()]
+    return [mats, get_directory(mats)]
+
 def connect_attribute(nodeOut, attrOut, nodeIn, attrIn):
     mc.connectAttr("%s.%s" % (nodeOut, attrOut), "%s.%s" % (nodeIn, attrIn), force=True)
 
