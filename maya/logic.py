@@ -1,5 +1,4 @@
 import maya.cmds as mc
-import maya.utils
 
 def get_materials():
     for shading_engine in mc.ls(type='shadingEngine'):
@@ -16,3 +15,12 @@ def get_material_texture_paths(mat):
         fileNodes.extend(mc.listConnections(c, type="file"))
 
     return [mc.getAttr("%s.fileTextureName" % f) for f in fileNodes]
+
+def connect_attribute(nodeOut, attrOut, nodeIn, attrIn):
+    mc.connectAttr("%s.%s" % (nodeOut, attrOut), "%s.%s" % (nodeIn, attrIn), force=True)
+
+def create_material(type, name):
+    surface = mc.shadingNode(type, name=name, asShader=True)
+    sg = mc.sets(name="%s_SG", renderable=True, noSurfaceShader=True, emtpy=True)
+    connect_attribute(surface, "outColor", sg, "surfaceShader")
+    return [surface, sg]

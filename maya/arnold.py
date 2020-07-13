@@ -1,7 +1,5 @@
 import maya.cmds as mc
+from . import logic as l
 
 def create_material(name):
-    mat = mc.shadingNode("standardSurface", name=name, asShader=True)
-    ss = mc.sets(name="%sSG" % mat, renderable=True, noSurfaceShader=True, empty=True)
-    mc.connectAttr("%s.outColor" % mat, "%s.surfaceShader" % ss, force=True)
-    return [mat, ss]
+    return l.create_material("standardSurface", "%s_arnold" % name)
