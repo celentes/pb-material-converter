@@ -78,6 +78,7 @@ class JDR_props(bpy.types.PropertyGroup):
     directory: bpy.props.StringProperty(name="", subtype='DIR_PATH')
     scanned: bpy.props.BoolProperty(default=False)
     select_all: bpy.props.BoolProperty(default=False)
+    show_mselect: bpy.props.BoolProperty(default=False)
     show_dir: bpy.props.BoolProperty(default=False)
     show_bindings: bpy.props.BoolProperty(default=False)
     renderer: bpy.props.EnumProperty(items=RENDERERS, update=renderer_update)
@@ -237,13 +238,21 @@ class JDR_PT_main_panel(bpy.types.Panel):
         mm_row.operator("jdr.select_all_materials", emboss=False)
         mm_row.operator("jdr.select_all_materials", text="", emboss=False, icon=sa_icon)
 
-        matbox = self.layout.box()
-        mb_col = matbox.column(align=True)
-        mb_col.scale_y = 0.8
-        for mprop in jdr_props.mat_props_list:
-            mbc_row = mb_col.row()
-            mbc_row.label(text = mprop.material.name)
-            mbc_row.prop(mprop, "selected")
+        ms_col = self.layout.column()
+        ms_col.emboss = 'PULLDOWN_MENU'
+        ms_col.prop(jdr_props,
+                "show_mselect",
+                text="Material Selection",
+                icon = "TRIA_DOWN" if jdr_props.show_mselect else "TRIA_RIGHT",
+                emboss=True)
+        if jdr_props.show_mselect:
+            matbox = self.layout.box()
+            mb_col = matbox.column(align=True)
+            mb_col.scale_y = 0.8
+            for mprop in jdr_props.mat_props_list:
+                mbc_row = mb_col.row()
+                mbc_row.label(text = mprop.material.name)
+                mbc_row.prop(mprop, "selected")
         selected_matprops = [x for x in jdr_props.mat_props_list if x.selected == True]
 
         col = self.layout.column()
@@ -271,7 +280,7 @@ class JDR_PT_main_panel(bpy.types.Panel):
                 icon = "TRIA_DOWN" if jdr_props.show_dir else "TRIA_RIGHT",
                 emboss=True)
         if jdr_props.show_dir:
-            dirs_row = self.layout.row(align=True)
+            dirs_row = col.row(align=True)
             dirs_row.prop(jdr_props, "directory")
 
         # choose renderer

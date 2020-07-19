@@ -1,0 +1,3 @@
+Photobash Material Converter Blender 1.0.1:
+* Fix UI bug with directory selection showing at the wrong place
+* Put material selection into collapsible pane

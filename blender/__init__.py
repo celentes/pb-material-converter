@@ -2,7 +2,7 @@ bl_info = {
     "name":        "Photobash Material Converter",
     "description": "Upgrade materials with missing texture nodes",
     "author":      "Tim Talashok, t.talashok@gmail.com",
-    "version":     (1, 0, 0),
+    "version":     (1, 0, 1),
     "blender":     (2, 82, 0),
     "category":    "Material"
 }
