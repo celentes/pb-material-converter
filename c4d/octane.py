@@ -101,7 +101,7 @@ def upgrade_material(mat, directories):
     name = mat.GetName()
     texfiles = tm.get_texture_filenames(directories, name)
 
-    oct_mat = create_material(name+"_octane")
+    oct_mat = create_material(name)
     for tex_path in texfiles:
         tex_type = tm.get_texture_type(name,tex_path)
         binding = get_binding(tex_type)

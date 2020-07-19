@@ -45,6 +45,7 @@ def replace_material(doc, oldmat, newmat):
     for x in filtered:
         x[c4d.TEXTURETAG_MATERIAL] = newmat
     oldmat.Remove()
+    newmat.SetName(newmat.GetName()[:-2]) # truncate .1 suffix
 
 SCROLLGRP_MAIN=500
 BTN_SCAN_MATERIALS=1000
@@ -58,6 +59,7 @@ GRP_MATERIAL_SELECT=3000
 CHKBOX_SELECT_ALL_MATS=3002
 CHKBOXES_MATERIAL_SELECT=3200
 GRP_MATERIAL_BINDINGS=5000
+SCGRP_BINDINGS=5500
 GRPS_BINDING=5100
 BTN_UPGRADE=9000
 SG_TEXTURE_DIR=10000
@@ -65,6 +67,8 @@ SG_TEXTURE_DIR_GRP=10001
 SG_BINDINGS=11000
 SG_BINDINGS_GRP=11001
 CB_RENDERER=12000
+SG_MSELECT=13000
+SG_MBS=14000
 
 class PBMC_Dialog(c4d.gui.GeDialog):
     materials = []
@@ -76,14 +80,20 @@ class PBMC_Dialog(c4d.gui.GeDialog):
     texture_dir_sg = None
     texture_dir_hide = True
 
+    mselect_sg = None
+    mselect_hide = True
+
     bindings_sg = None
     bindings_hide = True
+
+    mb_sgs = []
+    mb_hides = []
 
     def query_renderers(self):
         i = 0
         import physical
-        self.renderers["Physical"] = physical
-        self.rnd_ids[i] = "Physical"
+        self.renderers["Physical/ProRender"] = physical
+        self.rnd_ids[i] = "Physical/ProRender"
         self.rnd = physical
         i += 1
 
@@ -118,7 +128,7 @@ class PBMC_Dialog(c4d.gui.GeDialog):
     def redraw_materials(self):
         self.LayoutFlushGroup(id=GRP_MATERIAL_SELECT)
         for i in range(len(self.materials)):
-            self.AddStaticText(90000+i,c4d.BFH_SCALEFIT, name=self.materials[i].GetName())
+            self.AddStaticText(90000+i,c4d.BFH_SCALEFIT, name="  " + self.materials[i].GetName())
             self.AddCheckbox(CHKBOXES_MATERIAL_SELECT+i, c4d.BFH_RIGHT, initw=5, inith=5, name="")
             self.SetBool(CHKBOXES_MATERIAL_SELECT+i, True)
         self.LayoutChanged(id=GRP_MATERIAL_SELECT)
@@ -144,7 +154,8 @@ class PBMC_Dialog(c4d.gui.GeDialog):
 
         for i in range(len(self.materials)):
             hide = i not in self.selected_material_ids()
-            self.HideElement(GRPS_BINDING+i,hide)
+            self.HideElement(SG_MBS+i, hide)
+            self.HideElement(GRPS_BINDING+i,hide or self.mb_hides[i])
         self.LayoutChanged(id=GRP_MATERIAL_BINDINGS)
 
     def CreateLayout(self):
@@ -167,19 +178,25 @@ class PBMC_Dialog(c4d.gui.GeDialog):
 
         self.GroupBegin(id=99002, flags=c4d.BFH_SCALEFIT, cols=4)
         self.AddStaticText(id=99003,flags=c4d.BFH_LEFT,name="   "+str(len(self.materials)),borderstyle=c4d.BORDER_WITH_TITLE_BOLD)
-        self.AddStaticText(id=99004,flags=c4d.BFH_SCALEFIT,name="Materials found")
-        self.AddStaticText(id=99005,flags=c4d.BFH_RIGHT,name="Select all")
+        self.AddStaticText(id=99004,flags=c4d.BFH_SCALEFIT,name="Materials Found")
+        self.AddStaticText(id=99005,flags=c4d.BFH_RIGHT,name="Select All")
         self.AddCheckbox(id=CHKBOX_SELECT_ALL_MATS,flags=c4d.BFH_RIGHT,initw=5,inith=5,name="")
         self.SetBool(CHKBOX_SELECT_ALL_MATS, True)
         self.GroupEnd()
 
         self.AddSeparatorH(1)
 
+        mselect_bc = c4d.BaseContainer()
+        mselect_bc.SetBool(c4d.QUICKTAB_BAR, 1)
+        mselect_bc.SetString(c4d.QUICKTAB_BARTITLE, "   Material Selection")
+        mselect_bc.SetBool(c4d.QUICKTAB_BARSUBGROUP, True)
+        self.mselect_sg = self.AddCustomGui(SG_MSELECT, c4d.CUSTOMGUI_QUICKTAB, '', c4d.BFH_SCALEFIT, 0, 0, mselect_bc)
+        self.mselect_sg.Select(0, self.mselect_hide)
+
         self.GroupBegin(id=GRP_MATERIAL_SELECT,flags=c4d.BFH_SCALEFIT,cols=2)
         self.GroupSpace(0,1)
         self.GroupEnd()
-
-        self.AddSeparatorH(1)
+        self.HideElement(GRP_MATERIAL_SELECT, self.mselect_hide)
 
         # materials expansion group
 
@@ -195,10 +212,20 @@ class PBMC_Dialog(c4d.gui.GeDialog):
         self.GroupBegin(id=GRP_MATERIAL_BINDINGS,flags=c4d.BFH_SCALEFIT,cols=1)
         self.GroupSpace(0,0)
         for i in range(len(self.materials)):
-            self.GroupBegin(id=GRPS_BINDING+i,flags=c4d.BFH_SCALEFIT,cols=1, title=self.materials[i].GetName())
+            mb_bc = c4d.BaseContainer()
+            mb_bc.SetBool(c4d.QUICKTAB_BAR, 1)
+            mb_bc.SetString(c4d.QUICKTAB_BARTITLE, "        " + self.materials[i].GetName())
+            mb_bc.SetBool(c4d.QUICKTAB_BARSUBGROUP, True)
+            mb_sg = self.AddCustomGui(SG_MBS+i, c4d.CUSTOMGUI_QUICKTAB, '', c4d.BFH_SCALEFIT, 0, 0, mb_bc)
+
+            self.mb_sgs.append(mb_sg)
+            self.mb_hides.append(True)
+            self.mb_sgs[i].Select(0, self.mb_hides[i])
+
+            self.GroupBegin(id=GRPS_BINDING+i,flags=c4d.BFH_SCALEFIT,cols=1)
             self.GroupSpace(0,0)
-            self.GroupBorder(c4d.BORDER_GROUP_TOP)
             self.GroupEnd()
+            self.HideElement(GRPS_BINDING+i, self.mb_hides[i])
         self.GroupEnd()
 
         self.GroupEnd()
@@ -286,6 +313,19 @@ class PBMC_Dialog(c4d.gui.GeDialog):
         if id == SG_BINDINGS:
             self.bindings_hide = not self.bindings_hide
             self.HideElement(SG_BINDINGS_GRP, self.bindings_hide)
+            self.LayoutChanged(GRP_CONTROL)
+
+        if id == SG_MSELECT:
+            self.mselect_hide = not self.mselect_hide
+            self.HideElement(GRP_MATERIAL_SELECT, self.mselect_hide)
+            self.LayoutChanged(GRP_CONTROL)
+
+        if id >= SG_MBS and id < SG_MBS + len(self.materials):
+            i = id - SG_MBS;
+            self.mb_hides[i] = not self.mb_hides[i]
+            hide = i not in self.selected_material_ids()
+            hide = hide or self.mb_hides[i]
+            self.HideElement(GRPS_BINDING+i, hide)
             self.LayoutChanged(GRP_CONTROL)
 
         if id == CB_RENDERER:

@@ -1,0 +1,6 @@
+Photobash Material Converter C4D 1.0.1:
+* No longer rename materials
+* Add plugin icon
+* Rename physical to physical/prorender
+* Put material selection into collapsible pane
+* Put material links into individual collapsible panes

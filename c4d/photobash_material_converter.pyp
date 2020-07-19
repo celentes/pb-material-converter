@@ -32,11 +32,14 @@ class PBMC_CommandData(c4d.plugins.CommandData):
 
 # Execute main()
 if __name__=='__main__':
+    icon = c4d.bitmaps.BaseBitmap()
+    icon.InitWith(os.path.join(PLUGIN_PATH, "icon_pbmc.png"))
+
     c4d.plugins.RegisterCommandPlugin(
         id=PLUGIN_ID,
         str="Photobash Material Converter",
         help="",
         info=0,
         dat=PBMC_CommandData(),
-        icon=None
+        icon=icon
     )

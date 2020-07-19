@@ -183,7 +183,7 @@ def upgrade_material(mat, directories):
     name = mat.GetName()
     texfiles = tm.get_texture_filenames(directories, name)
 
-    arn_mat, ss = create_material(name+"_arnold")
+    arn_mat, ss = create_material(name)
     for tex_path in texfiles:
         tex_type = tm.get_texture_type(name, tex_path)
         binding = get_binding_name(tex_type)

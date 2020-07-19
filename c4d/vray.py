@@ -41,7 +41,7 @@ def create_texture(filename):
 def create_material(name):
     ID_VRAY_STANDARD_MATERIAL = 1038954
     mat = c4d.BaseMaterial(ID_VRAY_STANDARD_MATERIAL)
-    mat.SetName(name+"_vray")
+    mat.SetName(name)
     return mat
 
 def bind_texture(mat, tex_path, binding):
@@ -65,7 +65,7 @@ def upgrade_material(mat, directories):
     name = mat.GetName()
     texfiles = tm.get_texture_filenames(directories, name)
 
-    vray_mat = create_material(name+"_vray")
+    vray_mat = create_material(name)
     for tex_path in texfiles:
         tex_type = tm.get_texture_type(name,tex_path)
         binding = get_binding(tex_type)
