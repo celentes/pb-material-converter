@@ -1,4 +1,5 @@
 import maya.cmds as mc
+from functools import partial
 import sys
 import os
 import re
@@ -13,15 +14,21 @@ class PBMC_props:
     windowHeight = 0
     window = None
 
+    def all_mats_selected(self):
+        return all(self.selection.values())
+
     def fill_materials(self, materials):
         self.mats = [x for x in materials]
         for x in self.mats:
             self.selection[x] = True
 
     def select_all(self):
-        all_selected = all(self.selection.values())
-        for x in self.selection.values():
-            x = not all_selected
+        all_selected = self.all_mats_selected()
+        for x in self.mats:
+            self.selection[x] = not all_selected
+
+    def select_mat(self, mat):
+        self.selection[mat] = not self.selection[mat]
 
 pbmc_props = None
 
@@ -37,6 +44,27 @@ def truncate_material_name(mat):
 def colorify(string, color):
     return "<font color=%s>%s</font>" % (color, string)
 
+def upd_select_all():
+    global pbmc_props
+
+    mc.checkBox("select_all", e=True, v=pbmc_props.all_mats_selected())
+    for m in pbmc_props.mats:
+        mc.frameLayout("%s_bindings" % m, e=True, visible=pbmc_props.selection[m])
+
+def select_mat_update(mat, _):
+    global pbmc_props
+
+    pbmc_props.select_mat(mat)
+    upd_select_all()
+
+def select_all_update(_):
+    global pbmc_props
+
+    pbmc_props.select_all()
+    for m in pbmc_props.mats:
+        mc.checkBox("%s_select" % m, e=True, v=pbmc_props.selection[m])
+    upd_select_all()
+
 def create_layout(master):
     global pbmc_props
 
@@ -48,7 +76,7 @@ def create_layout(master):
     mc.text("") # skip child
     mc.text("<b>%i</b> Materials Found" % len(pbmc_props.mats), al='left', w=w2)
     mc.text("Select All", al='center', w=w3)
-    mc.checkBox("select_all", label="", width=w4)
+    mc.checkBox("select_all", label="", width=w4, value=pbmc_props.all_mats_selected(), changeCommand=partial(select_all_update))
 
     # material selection sublayout
     msCol = mc.columnLayout(w=pbmc_props.windowWidth, rs=2, p=master)
@@ -57,7 +85,7 @@ def create_layout(master):
         mc.text("1", visible=False) # skip child
         mc.text(m, al='left', w=w2, font='boldLabelFont')
         mc.text("2", visible=False) # skip child
-        mc.checkBox("%s_select" % m, label="", width=w4)
+        mc.checkBox("%s_select" % m, label="", width=w4, value=pbmc_props.selection[m], changeCommand=partial(select_mat_update, m))
 
     # bindings sublayout
     bdgsOffset = 20
@@ -65,11 +93,14 @@ def create_layout(master):
     bdgsCol = mc.columnLayout(w=pbmc_props.windowWidth-bdgsOffset, p=bdgsFrame, rs=2)
 
     for m in pbmc_props.mats:
-        frame = mc.frameLayout(label="%s" % m, collapsable=True, collapse=True, p=bdgsCol, width=pbmc_props.windowWidth-bdgsOffset)
+        frame = mc.frameLayout("%s_bindings" % m, label="%s" % m, collapsable=True, collapse=True, p=bdgsCol, width=pbmc_props.windowWidth-bdgsOffset)
         name = truncate_material_name(m)
         for t in get_texture_filenames([pbmc_props.dir], name): # tm
             mc.text(os.path.basename(t), align='left', font='boldLabelFont')
             mc.text(colorify(get_texture_type(name, t), 'grey'), align='left', font='boldLabelFont')
+
+    # query mc.checkBox(select_all, q=True, v=True)
+    # set mc.checkBox(select_all, e=True, v=False)
 
     # directory sublayout
     dirFrame = mc.frameLayout(label="Edit Texture Folder", collapsable=True, collapse=True, p=master, width=pbmc_props.windowWidth)
@@ -88,7 +119,8 @@ def scan_materials_upd(master):
 def delete_ui():
     global pbmc_props
 
-    mc.deleteUI(pbmc_props.window)
+    if pbmc_props.window:
+        mc.deleteUI(pbmc_props.window)
 
 def create_ui():
     global pbmc_props
