@@ -20,6 +20,8 @@ class PBMC_props:
         return all(self.selection.values())
 
     def fill_materials(self, materials):
+        self.mats = None
+        self.selection = dict()
         self.mats = [x for x in materials]
         for x in self.mats:
             self.selection[x] = True
@@ -124,9 +126,9 @@ def create_layout(master):
 
     # directory sublayout
     dirFrame = mc.frameLayout(label="Edit Texture Folder", collapsable=True, collapse=True, p=master, width=pbmc_props.windowWidth)
-    dirCol = mc.columnLayout(p=dirFrame, width=pbmc_props.windowWidth-6)
+    dirCol = mc.columnLayout(p=dirFrame, width=pbmc_props.windowWidth-8)
     mc.separator()
-    mc.rowLayout(numberOfColumns=2, columnWidth2=[pbmc_props.windowWidth-26, 20], p=dirCol)
+    mc.rowLayout(numberOfColumns=2, columnWidth2=[pbmc_props.windowWidth-28, 20], p=dirCol)
     mc.text('dir_text', label=pbmc_props.dir, align='left', bgc=[0.25, 0.25, 0.25])
     mc.button(label='...', width=20, height=20, command=lambda _: select_folder())
 
@@ -134,12 +136,15 @@ def create_layout(master):
     mc.separator(p=master)
     mc.button(label='Upgrade Selected Materials', width=pbmc_props.windowWidth, height=20, command=lambda _: upgrade_materials(), p = master)
 
-def scan_materials_upd(master):
+def scan_materials_upd(layout):
     global pbmc_props
 
     materials, directory = get_materials_and_directory() # logic
     pbmc_props.fill_materials(materials)
     pbmc_props.dir = directory
+    if mc.layout('master', ex=True):
+        mc.deleteUI('master', layout=True)
+    master = mc.columnLayout('master', p=layout, width=pbmc_props.windowWidth)
     create_layout(master)
 
 def delete_ui():
