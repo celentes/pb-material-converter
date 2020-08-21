@@ -11,26 +11,24 @@ def create_image(filename, uv):
     return img
 
 def set_base_color(mat, img):
-    logic.connect_attribute(img, 'outColor', mat, 'baseColor')
-    # change base color weight from 0.8 to 1.0
-    mc.setAttr("%s.base" % mat, 1.0)
+    logic.connect_attribute(img, 'outColor', mat, 'color')
 
 def set_metalness(mat, img):
     logic.connect_attribute(img, 'outAlpha', mat, 'metalness')
 
 def set_roughness(mat, img):
-    logic.connect_attribute(img, 'outAlpha', mat, 'specularRoughness')
+    iv = mc.shadingNode('reverse', name='%s_rgh_reverse' % mat, asUtility=True)
+    logic.connect_attribute(img, 'outAlpha', iv, 'inputX')
+    logic.connect_attribute(iv, 'outputX', mat, 'reflectionGlossiness')
 
 def set_normal(mat, img):
-    normal = mc.shadingNode('aiNormalMap', name='%s_normal' % mat, asUtility=True)
-    logic.connect_attribute(normal, 'outValue', mat, 'normalCamera')
-    logic.connect_attribute(img, 'outColor', normal, 'input')
+    logic.connect_attribute(img, 'outColor', mat, 'bumpMap')
 
 def set_specular(mat, img):
-    logic.connect_attribute(img, 'outAlpha', mat, 'specular')
+    logic.connect_attribute(img, 'outColor', mat, 'reflectionColor')
 
 def set_emission(mat, img):
-    logic.connect_attribute(img, 'outAlpha', mat, 'emission')
+    logic.connect_attribute(img, 'outColor', mat, 'illumColor')
 
 def set_displacement(mat, img):
     disp = mc.shadingNode('displacementShader', name="%s_displacement" % mat, asShader=True)
@@ -38,7 +36,7 @@ def set_displacement(mat, img):
     logic.connect_attribute(img, 'outAlpha', disp, 'displacement')
 
 def set_opacity(mat, img):
-    logic.connect_attribute(img, 'outColor', mat, 'opacity')
+    logic.connect_attribute(img, 'outColor', mat, 'opacityMap')
 
 def bind_texture(mat, img, tex_type):
     if tex_type == "Diffuse":
@@ -60,28 +58,28 @@ def bind_texture(mat, img, tex_type):
 
 def get_binding_name(tex_type):
     if tex_type == "Diffuse":
-        return "Base Color"
+        return "Color"
     if tex_type == "Metalness":
         return "Metalness"
     if tex_type == "Specular":
-        return "Specular"
+        return "Reflection Color"
     if tex_type == "Roughness":
-        return "Specular Roughness"
+        return "Reflection Glossines (inverted)"
     if tex_type == "Normal":
-        return "Normal"
+        return "Bump Map"
     if tex_type == "Emission":
-        return "Emission"
+        return "Illum Color"
     if tex_type == "Displacement":
         return "Displacement"
     if tex_type == "Opacity":
-        return "Opacity"
+        return "Opacity Map"
     return tm.NOTMAPPED_STR
 
 def upgrade_material(mat, directory):
     name = logic.truncate_material_name(mat)
     texfiles = tm.get_texture_filenames([directory], name)
 
-    surface, sg = logic.create_material("standardSurface", "%s_mtl" % name)
+    surface, sg = logic.create_material("VRayMtl", "%s_mtl" % name)
     uv = mc.shadingNode('place2dTexture', name="%s_uv" % name, asUtility=True)
     for tex_path in texfiles:
         tex_type = tm.get_texture_type(name, tex_path)

@@ -6,7 +6,8 @@ import re
 
 import logic
 import texture_mapping as tm
-import arnold_rnd as arn
+import arnold_rnd
+import vray_rnd
 
 class PBMC_props:
     mats = None
@@ -16,7 +17,7 @@ class PBMC_props:
     window = None
     # layouts
     bindingsLayout = None
-    renderer = arn
+    renderer = arnold_rnd
 
     def all_mats_selected(self):
         return all(self.selection.values())
@@ -44,10 +45,10 @@ pbmc_props = None
 def on_renderer_change(item):
     global pbmc_props
     if (item=='Arnold'):
-        pbmc_props.renderer = arn
+        pbmc_props.renderer = arnold_rnd
     if (item=='Vray'):
-        #pbmc_props.renderer = vray
-        pass
+        pbmc_props.renderer = vray_rnd
+    redraw_bindings()
 
 def colorify(string, color):
     return "<font color=%s>%s</font>" % (color, string)
