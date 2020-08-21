@@ -32,15 +32,15 @@ def set_specular(mat, img):
 def set_emission(mat, img):
     logic.connect_attribute(img, 'outAlpha', mat, 'emission')
 
-def set_displacement(mat, img):
+def set_displacement(mat, sg, img):
     disp = mc.shadingNode('displacementShader', name="%s_displacement" % mat, asShader=True)
-    logic.connect_attribute(disp, 'displacement', "%s_SG" % mat, 'displacementShader')
+    logic.connect_attribute(disp, 'displacement', "%s" % sg, 'displacementShader')
     logic.connect_attribute(img, 'outAlpha', disp, 'displacement')
 
 def set_opacity(mat, img):
     logic.connect_attribute(img, 'outColor', mat, 'opacity')
 
-def bind_texture(mat, img, tex_type):
+def bind_texture(mat, sg, img, tex_type):
     if tex_type == "Diffuse":
         return set_base_color(mat, img)
     if tex_type == "Metalness":
@@ -54,7 +54,7 @@ def bind_texture(mat, img, tex_type):
     if tex_type == "Emission":
         return set_emission(mat, img)
     if tex_type == "Displacement":
-        return set_displacement(mat, img)
+        return set_displacement(mat, sg, img)
     if tex_type == "Opacity":
         return set_opacity(mat, img)
 
@@ -81,7 +81,7 @@ def upgrade_material(mat, directory):
     name = logic.truncate_material_name(mat)
     texfiles = tm.get_texture_filenames([directory], name)
 
-    surface, sg = logic.create_material("standardSurface", "%s_mtl" % name)
+    surface, sg = logic.create_material(mat, "standardSurface", "%s_mtl" % name)
     uv = mc.shadingNode('place2dTexture', name="%s_uv" % name, asUtility=True)
     for tex_path in texfiles:
         tex_type = tm.get_texture_type(name, tex_path)
@@ -90,6 +90,6 @@ def upgrade_material(mat, directory):
             continue
         else:
             img = create_image(tex_path, uv)
-            bind_texture(surface, img, tex_type)
+            bind_texture(surface, sg, img, tex_type)
 
     return surface

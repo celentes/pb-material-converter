@@ -10,6 +10,11 @@ def truncate_material_name(mat):
     idx = name.rfind(":")
     if idx != -1:
         name = name[-idx+1:]
+
+    # handle obj madness
+    if re.search(":", mat):
+        sg = mc.listConnections(mat, type='shadingEngine')[0]
+        name = sg[re.search(":", sg).end(0):]
     return name
 
 def get_materials():
@@ -23,17 +28,13 @@ def get_objects(mat):
     return [x for x in set(mc.listConnections(shadingGroups, type='shape'))]
 
 def replace_material(oldmat, newmat):
-    for obj in get_objects(oldmat):
-        mc.sets(obj, e=True, forceElement=newmat+'_SG')
+    sg = mc.listConnections(oldmat, type='shadingEngine')[0]
     mc.delete(oldmat)
+    connect_attribute(newmat, "outColor", sg, "surfaceShader")
 
 def get_material_texture_paths(mat):
     fileNodes = []
     fileNodes.extend(mc.listConnections(mat, type="file"))
-
-    nConnections = mc.listConnections("%s.normalCamera" % mat)
-    for c in nConnections:
-        fileNodes.extend(mc.listConnections(c, type="file"))
 
     return [mc.getAttr("%s.fileTextureName" % f) for f in fileNodes]
 
@@ -51,8 +52,9 @@ def get_materials_and_directory():
 def connect_attribute(nodeOut, attrOut, nodeIn, attrIn):
     mc.connectAttr("%s.%s" % (nodeOut, attrOut), "%s.%s" % (nodeIn, attrIn), force=True)
 
-def create_material(type, name):
+def create_material(oldmat, type, name):
     surface = mc.shadingNode(type, name=name, asShader=True)
-    sg = mc.sets(name="%s_SG" % name, renderable=True, noSurfaceShader=True, empty=True)
-    connect_attribute(surface, "outColor", sg, "surfaceShader")
+    #sg = mc.sets(name="%s_SG" % name, renderable=True, noSurfaceShader=True, empty=True)
+    sg = mc.listConnections(oldmat, type='shadingEngine')[0]
+    #connect_attribute(surface, "outColor", sg, "surfaceShader")
     return [surface, sg]
