@@ -4,17 +4,19 @@ import sys
 import os
 import re
 
-#from . import logic
+import logic
+import texture_mapping as tm
+import arnold_rnd as arn
 
 class PBMC_props:
     mats = None
     dir = None
     selection = dict()
     windowWidth = 0
-    windowHeight = 0
     window = None
     # layouts
     bindingsLayout = None
+    renderer = arn
 
     def all_mats_selected(self):
         return all(self.selection.values())
@@ -38,6 +40,14 @@ class PBMC_props:
         return [x for x in self.mats if self.selection[x] == True]
 
 pbmc_props = None
+
+def on_renderer_change(item):
+    global pbmc_props
+    if (item=='Arnold'):
+        pbmc_props.renderer = arn
+    if (item=='Vray'):
+        #pbmc_props.renderer = vray
+        pass
 
 def colorify(string, color):
     return "<font color=%s>%s</font>" % (color, string)
@@ -69,10 +79,10 @@ def redraw_bindings():
         if mc.layout("%s_bindings" % m, ex=True):
             mc.deleteUI("%s_bindings" % m, layout=True)
         frame = mc.frameLayout("%s_bindings" % m, label="%s" % m, collapsable=True, collapse=True, p=pbmc_props.bindingsLayout, width=w)
-        name = truncate_material_name(m) # logic
-        for t in get_texture_filenames([pbmc_props.dir], name): # tm
-            tex_type = get_texture_type(name, t) # tm
-            tex_binding = get_binding_name(tex_type) # arnold
+        name = logic.truncate_material_name(m)
+        for t in tm.get_texture_filenames([pbmc_props.dir], name):
+            tex_type = tm.get_texture_type(name, t)
+            tex_binding = pbmc_props.renderer.get_binding_name(tex_type)
             mc.text(os.path.basename(t), align='left', font='boldLabelFont')
             mc.text(colorify(tex_binding, 'grey'), align='left', font='boldLabelFont')
 
@@ -89,10 +99,8 @@ def select_folder():
 
 def upgrade_materials():
     global pbmc_props
-    #for x in pbmc_props.selected_materials():
-    mat = pbmc_props.selected_materials()[1]
-    upgrade_material(mat, pbmc_props.dir) # arnold
-    pass
+    for x in pbmc_props.selected_materials():
+        logic.replace_material(x,pbmc_props.renderer.upgrade_material(x, pbmc_props.dir))
 
 def create_layout(master):
     global pbmc_props
@@ -132,14 +140,20 @@ def create_layout(master):
     mc.text('dir_text', label=pbmc_props.dir, align='left', bgc=[0.25, 0.25, 0.25])
     mc.button(label='...', width=20, height=20, command=lambda _: select_folder())
 
+    # choose renderer
+    mc.separator(p=master)
+    mc.optionMenu(label='Renderer   ', width=pbmc_props.windowWidth, p=master, changeCommand=on_renderer_change)
+    mc.menuItem(label='Arnold')
+    mc.menuItem(label='Vray')
+
     # upgrade materials button
     mc.separator(p=master)
-    mc.button(label='Upgrade Selected Materials', width=pbmc_props.windowWidth, height=20, command=lambda _: upgrade_materials(), p = master)
+    mc.button(label='Upgrade Selected Materials', width=pbmc_props.windowWidth, height=20, command=lambda _: upgrade_materials(), p=master)
 
 def scan_materials_upd(layout):
     global pbmc_props
 
-    materials, directory = get_materials_and_directory() # logic
+    materials, directory = logic.get_materials_and_directory()
     pbmc_props.fill_materials(materials)
     pbmc_props.dir = directory
     if mc.layout('master', ex=True):
@@ -147,25 +161,21 @@ def scan_materials_upd(layout):
     master = mc.columnLayout('master', p=layout, width=pbmc_props.windowWidth)
     create_layout(master)
 
-def delete_ui():
-    global pbmc_props
-
-    if mc.window(pbmc_props.window, ex=True):
-        mc.deleteUI(pbmc_props.window)
+def delete_ui(windowID):
+    if mc.workspaceControl(windowID, ex=True):
+        mc.deleteUI(windowID, control=True)
 
 def create_ui():
     global pbmc_props
 
     windowID = "Photobash Material Converter"
 
-    if pbmc_props:
-        delete_ui()
+    delete_ui(windowID)
 
     pbmc_props = PBMC_props()
     pbmc_props.windowWidth = 500
-    pbmc_props.windowHeight = 600
 
-    pbmc_props.window = mc.window(windowID, title=windowID, sizeable=True, mxb=False, rtf=False, width=pbmc_props.windowWidth, h=pbmc_props.windowHeight)
+    pbmc_props.window = mc.workspaceControl(windowID, tabToControl=('AttributeEditor', -1), label='Photobash Material Converter', initialWidth=pbmc_props.windowWidth)
 
     # master layout
     col = mc.columnLayout(width=pbmc_props.windowWidth)
@@ -175,4 +185,6 @@ def create_ui():
     mc.button(label='Scan Materials', width=pbmc_props.windowWidth, height=20, command=lambda _: scan_materials_upd(col))
     mc.separator()
 
-    mc.showWindow()
+    #mc.showWindow()
+    #mc.dockControl(area='right', allowedArea='all', content=pbmc_props.window)
+

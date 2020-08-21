@@ -1,4 +1,7 @@
 import maya.cmds as mc
+import re
+
+import texture_mapping as tm
 
 def truncate_material_name(mat):
     name = mat
@@ -15,6 +18,15 @@ def get_materials():
             for mat in mc.ls(mc.listConnections(shading_engine), materials=True):
                 yield mat
 
+def get_objects(mat):
+    shadingGroups = mc.listConnections(mat, type='shadingEngine')
+    return [x for x in set(mc.listConnections(shadingGroups, type='shape'))]
+
+def replace_material(oldmat, newmat):
+    for obj in get_objects(oldmat):
+        mc.sets(obj, e=True, forceElement=newmat+'_SG')
+    mc.delete(oldmat)
+
 def get_material_texture_paths(mat):
     fileNodes = []
     fileNodes.extend(mc.listConnections(mat, type="file"))
@@ -29,7 +41,7 @@ def get_directory(mats):
     texture_paths = []
     for m in mats:
         texture_paths.extend(get_material_texture_paths(m))
-    dir_hints = get_directory_hints(texture_paths) # tm
+    dir_hints = tm.get_directory_hints(texture_paths)
     return dir_hints[0]
 
 def get_materials_and_directory():
