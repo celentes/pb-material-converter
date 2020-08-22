@@ -35,6 +35,9 @@ def set_displacement(mat, sg, img):
     disp = mc.shadingNode('octaneDisplacementNode', name="%s_displacement" % mat, asUtility=True)
     mc.setAttr("%s.DetLevel" % disp, 12)
     mc.setAttr("%s.DisplacementDir" % disp, 3)
+    mc.setAttr("%s.Offset" % disp, 0.5)
+    mc.setAttr("%s.Height" % disp, 1.0)
+    mc.setAttr("%s.frozen" % disp, True)
     logic.connect_attribute(img, 'outTex', disp, 'Texture')
     logic.connect_attribute(disp, 'outDisp', mat, 'Displacement')
 
