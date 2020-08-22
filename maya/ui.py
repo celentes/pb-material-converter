@@ -8,6 +8,7 @@ import logic
 import texture_mapping as tm
 import arnold_rnd
 import vray_rnd
+import octane_rnd
 
 class PBMC_props:
     mats = None
@@ -48,6 +49,8 @@ def on_renderer_change(item):
         pbmc_props.renderer = arnold_rnd
     if (item=='Vray'):
         pbmc_props.renderer = vray_rnd
+    if (item=='Octane'):
+        pbmc_props.renderer = octane_rnd
     redraw_bindings()
 
 def colorify(string, color):
@@ -146,6 +149,7 @@ def create_layout(master):
     mc.optionMenu(label='Renderer   ', width=pbmc_props.windowWidth, p=master, changeCommand=on_renderer_change)
     mc.menuItem(label='Arnold')
     mc.menuItem(label='Vray')
+    mc.menuItem(label='Octane')
 
     # upgrade materials button
     mc.separator(p=master)

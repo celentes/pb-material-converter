@@ -9,8 +9,7 @@ for path in pymel.util.getEnv("MAYA_PLUG_IN_PATH").split(';'):
         p = path + '/PhotobashMaterialConverter'
 
 sys.path.append(p)
-import ui, texture_mapping, logic, arnold_rnd
-print p
+import ui, texture_mapping, logic, arnold_rnd, octane_rnd, vray_rnd
 
 def initializePlugin(mobj):
     print "creating ui"

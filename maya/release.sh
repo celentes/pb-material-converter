@@ -3,7 +3,7 @@ rm -rf plug-ins
 mkdir plug-ins
 mkdir plug-ins/PhotobashMaterialConverter
 cp PhotobashMaterialConverter.py plug-ins
-python2 -m compileall arnold_rnd.py vray_rnd.py logic.py ui.py ../common/texture_mapping.py -b
+python2 -m compileall octane_rnd.py arnold_rnd.py vray_rnd.py logic.py ui.py ../common/texture_mapping.py -b
 mv ../common/texture_mapping.pyc .
 mv *.pyc plug-ins/PhotobashMaterialConverter
 
