@@ -80,6 +80,7 @@ def upgrade_material(mat, directory):
     texfiles = tm.get_texture_filenames([directory], name)
 
     surface, sg = logic.create_material(mat, "VRayMtl", "%s_mtl" % name)
+    mc.setAttr("%s.useFresnel" % surface, False)
     uv = mc.shadingNode('place2dTexture', name="%s_uv" % name, asUtility=True)
     for tex_path in texfiles:
         tex_type = tm.get_texture_type(name, tex_path)
