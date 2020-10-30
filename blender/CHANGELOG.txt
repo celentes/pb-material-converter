@@ -1,3 +1,7 @@
+Photobash Material Converter Blender 1.0.2:
+* Fix materials being looked up several times when belonging to multiple objects
+* Fix material suffix sometimes resulting in empty material after upgrade
+
 Photobash Material Converter Blender 1.0.1:
 * Fix UI bug with directory selection showing at the wrong place
 * Put material selection into collapsible pane

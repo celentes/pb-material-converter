@@ -84,8 +84,9 @@ class JDR_props(bpy.types.PropertyGroup):
     renderer: bpy.props.EnumProperty(items=RENDERERS, update=renderer_update)
 
 def truncate_material_suffix(material_name):
-    if re.search('\.[0-9][0-9][0-9]$', material_name):
-        return material_name[:-4]
+    res = re.search('\.[0-9]{1,4}$', material_name)
+    if res:
+        return material_name.replace(res.group(0), '')
     else:
         return material_name
 
@@ -183,7 +184,8 @@ class JDR_scan_materials(bpy.types.Operator):
     bl_label = "Scan Materials"
 
     def execute(self, context):
-        materials = [x.active_material for x in bpy.data.objects if x.active_material is not None]
+        object_mats = [x.active_material for x in bpy.data.objects if x.active_material is not None]
+        materials = [x for x in bpy.data.materials if x in object_mats]
         if len(materials) == 0:
             self.report({'WARNING'}, "No active materials found")
             return {'CANCELLED'}
