@@ -1,3 +1,7 @@
+Photobash Material Converter Blender 1.0.3:
+* Fix some materials being skipped for multimaterial objects
+* Make non-diffuse maps use 'non-color' color space
+
 Photobash Material Converter Blender 1.0.2:
 * Fix materials being looked up several times when belonging to multiple objects
 * Fix material suffix sometimes resulting in empty material after upgrade

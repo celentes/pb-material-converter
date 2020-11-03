@@ -90,11 +90,16 @@ def truncate_material_suffix(material_name):
     else:
         return material_name
 
-def mat_props_list_update(context, materials):
+def mat_props_list_clear(context):
     jdr_props = context.window_manager.jdr_props
     jdr_props.mat_props_list.clear()
     jdr_props.directory = ""
     jdr_props.scanned = False
+    return
+
+def mat_props_list_update(context, materials):
+    jdr_props = context.window_manager.jdr_props
+    mat_props_list_clear(context)
 
     # fill out directory suggestions
     textures = []
@@ -164,14 +169,18 @@ def connect_binding(context, material, binding):
     img_node.image = bpy.data.images.load(binding.path)
     material.node_tree.links.new(uv_node.outputs['Vector'], img_node.inputs['Vector'])
 
+    renderer = RENDERER_BACKENDS[context.window_manager.jdr_props.renderer]
+    if (binding.socket != renderer.map_texture_type("Diffuse")):
+        img_node.image.colorspace_settings.name = 'Non-Color'
+
     # set up final link
     renderer = RENDERER_BACKENDS[context.window_manager.jdr_props.renderer]
-    if binding.socket == "Normal":
+    if binding.socket == renderer.map_texture_type("Normal"):
         socket = shader.inputs[binding.socket]
         nm_node = material.node_tree.nodes.new('ShaderNodeNormalMap')
         material.node_tree.links.new(img_node.outputs['Color'], nm_node.inputs['Color'])
         material.node_tree.links.new(nm_node.outputs['Normal'], socket)
-    elif binding.socket == "Displacement":
+    elif binding.socket == renderer.map_texture_type("Displacement"):
         renderer.map_displacement(material, img_node)
     else:
         socket = shader.inputs[binding.socket]
@@ -184,7 +193,7 @@ class JDR_scan_materials(bpy.types.Operator):
     bl_label = "Scan Materials"
 
     def execute(self, context):
-        object_mats = [x.active_material for x in bpy.data.objects if x.active_material is not None]
+        object_mats = [x.material for obj in bpy.data.objects for x in obj.material_slots]
         materials = [x for x in bpy.data.materials if x in object_mats]
         if len(materials) == 0:
             self.report({'WARNING'}, "No active materials found")
@@ -205,6 +214,7 @@ class JDR_upgrade_materials(bpy.types.Operator):
             clear_material(context, mprop.material)
             for binding in mprop.bindings:
                 connect_binding(context, mprop.material, binding)
+        mat_props_list_clear(context)
         return {'FINISHED'}
 
 class JDR_select_all_materials(bpy.types.Operator):
