@@ -168,10 +168,13 @@ def connect_binding(context, material, binding):
     img_node = material.node_tree.nodes.new('ShaderNodeTexImage')
     img_node.image = bpy.data.images.load(binding.path)
     material.node_tree.links.new(uv_node.outputs['Vector'], img_node.inputs['Vector'])
+    img_node.image.colorspace_settings.name = 'Non-Color'
 
     renderer = RENDERER_BACKENDS[context.window_manager.jdr_props.renderer]
-    if (binding.socket != renderer.map_texture_type("Diffuse")):
-        img_node.image.colorspace_settings.name = 'Non-Color'
+    if (binding.socket == renderer.map_texture_type("Diffuse")):
+        img_node.image.colorspace_settings.name = 'sRGB'
+    if (binding.socket == renderer.map_texture_type("Emission")):
+        img_node.image.colorspace_settings.name = 'sRGB'
 
     # set up final link
     renderer = RENDERER_BACKENDS[context.window_manager.jdr_props.renderer]
